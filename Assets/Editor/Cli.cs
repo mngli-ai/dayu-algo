@@ -72,6 +72,10 @@ namespace Dayu.EditorTools
             GraphHistoryTests.Run(ref n, ref ok);
             SaveFlowTests.Run(ref n, ref ok);
             CardFitTests.Run(ref n, ref ok);
+            InspectorScrollTests.Run(ref n, ref ok);
+            BackdropTests.Run(ref n, ref ok);
+            SoundCueTests.Run(ref n, ref ok);
+            PanelTintTests.Run(ref n, ref ok);
             Debug.Log("共 " + n + " 项，通过 " + ok + " 项");
             if (n != ok) EditorApplication.Exit(1);
         }

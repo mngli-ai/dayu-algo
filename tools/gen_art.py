@@ -233,9 +233,119 @@ def gen_font():
  prev.save(Path(__import__('tempfile').gettempdir())/'font_preview.png'); print(f'字形总数: {len(chars)}, 缺字数: {missing}, atlas: {atlas.width}x{atlas.height}')
  if missing>10: raise RuntimeError('缺字超过 10 个')
 
+# ---------------- 关卡背景条：160x80 可水平平铺，上半远景 / 下半近景 ----------------
+# 只用 PALETTE 16 色 + 全透明；贴左右边缘的横带必须同色，横向接缝才不断层。
+PROPS=ROOT/'Assets/Art/Props'; RPROPS=ROOT/'Assets/Resources/Props'
+BGW,BGH=160,80
+BGPAPER,BGSAND,BGWHITE,BGFOAM,BGMINTL=0,1,2,3,4
+BOWL,BOW,BOD,BINK=5,6,7,8
+BGHONEY,BGAMBER,BGLAV,BGGRAPE,BGYELLOW,BGCORAL,BGMINT=9,10,11,12,13,14,15
+
+def _bg():
+ im=Image.new('RGBA',(BGW,BGH),(0,0,0,0)); return im,ImageDraw.Draw(im)
+
+def _bg_save(name,im):
+ PROPS.mkdir(parents=True,exist_ok=True); RPROPS.mkdir(parents=True,exist_ok=True)
+ src=PROPS/f'{name}.png'; im.save(src)
+ (RPROPS/src.name).write_bytes(src.read_bytes())
+
+def bg_dock():
+ im,d=_bg()
+ for x,y,w in ((10,8,14),(52,13,18),(128,6,12)): d.rectangle((x,y,x+w,y+1),fill=P[BGMINTL])
+ d.rectangle((0,34,BGW-1,35),fill=P[BGMINTL]); d.rectangle((0,36,BGW-1,36),fill=P[BOW])
+ def crane(x):
+  d.rectangle((x,10,x+2,33),fill=P[BOD])
+  d.rectangle((x-12,10,x+16,11),fill=P[BOW])
+  d.rectangle((x-14,9,x-12,13),fill=P[BOD])
+  d.rectangle((x-2,14,x+1,17),fill=P[BOW])
+  d.rectangle((x+13,12,x+13,19),fill=P[BINK]); d.rectangle((x+12,19,x+14,20),fill=P[BOD])
+ crane(30); crane(104)
+ d.rectangle((138,29,BGW-10,32),fill=P[BOD]); d.rectangle((141,25,BGW-14,28),fill=P[BOW])
+ for y,xs in ((44,(12,60,108)),(48,(30,84,128)),(52,(4,52,96,140))):
+  for x in xs: d.rectangle((x,y,x+8,y),fill=P[BOWL])
+ def quay(x0,x1):
+  d.rectangle((x0,56,x1,57),fill=P[BOD]); d.rectangle((x0,58,x1,69),fill=P[BOW])
+  for x in range(x0+4,x1,10): d.rectangle((x,58,x,69),fill=P[BGFOAM])
+  for x in (x0+6,x0+30,(x0+x1)//2+8,x1-8): d.rectangle((x,70,x+2,79),fill=P[BOD])
+ quay(8,52); quay(100,150)
+ def crate(x,y,s,c):
+  d.rectangle((x,y,x+s,y+s),fill=P[c]); d.rectangle((x,y,x+s,y),fill=P[BINK])
+  d.point((x+1,y+2),fill=P[BGFOAM]); d.point((x+s-1,y+s-1),fill=P[BGAMBER])
+ crate(16,49,7,BGSAND); crate(30,51,5,BGPAPER); crate(112,48,7,BGSAND); crate(126,51,5,BGMINTL)
+ d.rectangle((40,52,43,55),fill=P[BOD]); d.rectangle((136,52,139,55),fill=P[BOD])
+ _bg_save('bg_dock',im)
+
+def bg_factory():
+ im,d=_bg()
+ for x,y,w in ((16,6,16),(120,10,12)): d.rectangle((x,y,x+w,y+1),fill=P[BGMINTL])
+ def tooth(x):
+  for c in range(24):
+   t=30-c//4
+   d.rectangle((x+c,t,x+c,33),fill=P[BOWL])
+   if c%4==0: d.rectangle((x+c,t,x+c,t+1),fill=P[BOD])
+ for k in range(6): tooth(8+k*24)
+ d.rectangle((66,16,78,25),fill=P[BOWL]); d.rectangle((67,14,77,15),fill=P[BOD])
+ for x in (69,75): d.rectangle((x,25,x,33),fill=P[BOD])
+ d.rectangle((140,8,143,29),fill=P[BOD]); d.rectangle((139,8,144,9),fill=P[BOW])
+ for x,y in ((141,5),(143,2),(140,0)): d.rectangle((x,y,x+2,y+1),fill=P[BGFOAM])
+ d.rectangle((6,48,58,49),fill=P[BOD]); d.rectangle((8,50,56,64),fill=P[BGPAPER])
+ d.rectangle((20,55,27,64),fill=P[BOD]); d.rectangle((36,52,44,57),fill=P[BGMINTL])
+ d.rectangle((92,44,152,45),fill=P[BOD]); d.rectangle((94,46,150,64),fill=P[BGSAND])
+ for x in range(100,146,12): d.rectangle((x,50,x+5,55),fill=P[BOD])
+ for x in range(100,146,12): d.rectangle((x,58,x+5,63),fill=P[BOW])
+ d.rectangle((0,68,BGW-1,69),fill=P[BINK])
+ for x in range(8,BGW,16): d.rectangle((x,70,x+1,71),fill=P[BGHONEY])
+ for x in (40,96): d.rectangle((x,63,x+5,67),fill=P[BGSAND]); d.rectangle((x,63,x+5,63),fill=P[BINK])
+ d.rectangle((0,75,BGW-1,75),fill=P[BOWL]); d.rectangle((0,76,BGW-1,79),fill=P[BOD])
+ _bg_save('bg_factory',im)
+
+def bg_shelf():
+ im,d=_bg()
+ for y in (17,26): d.rectangle((0,y,BGW-1,y+1),fill=P[BOWL])
+ d.rectangle((0,34,BGW-1,34),fill=P[BOD])
+ for x in range(16,BGW-8,24): d.rectangle((x,12,x+1,33),fill=P[BOD])
+ for x,y,c in ((20,20,BGMINTL),(68,21,BGSAND),(116,14,BGMINTL),(44,29,BGSAND),(92,29,BGPAPER)):
+  d.rectangle((x,y,x+5,y+3),fill=P[c])
+ def rack(x0,x1):
+  d.rectangle((x0,42,x0+3,79),fill=P[BOD]); d.rectangle((x1-3,42,x1,79),fill=P[BOD])
+  for y in (46,58,70): d.rectangle((x0,y,x1,y+2),fill=P[BOD])
+ rack(10,64); rack(96,150)
+ def box(x,y,w,h,c): d.rectangle((x,y,x+w-1,y+h-1),fill=P[c]); d.rectangle((x,y,x+w-1,y),fill=P[BINK])
+ box(18,52,9,6,BGSAND); box(34,53,7,5,BGYELLOW); box(46,51,9,7,BGMINTL)
+ box(104,51,9,7,BGSAND); box(120,53,8,5,BGAMBER); box(134,52,8,6,BGPAPER)
+ box(22,64,8,6,BGYELLOW); box(38,63,10,7,BGSAND); box(50,65,6,5,BGMINTL)
+ box(106,63,9,7,BGMINTL); box(122,64,8,6,BGSAND); box(136,65,7,5,BGWHITE)
+ box(70,70,8,7,BGSAND); box(82,71,7,6,BGHONEY)
+ d.rectangle((0,78,BGW-1,79),fill=P[BOD])
+ _bg_save('bg_shelf',im)
+
+def bg_deep():
+ im,d=_bg()
+ # 渐层带用「整行交替」而不是棋盘格：同一行左右两端同色，横向平铺接缝才严丝合缝
+ for y in range(10,17): d.rectangle((0,y,BGW-1,y),fill=P[BGMINTL])
+ for y in range(17,23): d.rectangle((0,y,BGW-1,y),fill=P[BGMINTL] if y%2==0 else P[BGFOAM])
+ for y in range(23,31): d.rectangle((0,y,BGW-1,y),fill=P[BOWL])
+ for y in range(31,40): d.rectangle((0,y,BGW-1,y),fill=P[BOWL] if y%2==0 else P[BOW])
+ for y in range(40,48): d.rectangle((0,y,BGW-1,y),fill=P[BOW])
+ for y in range(48,54): d.rectangle((0,y,BGW-1,y),fill=P[BOW] if y%2==0 else P[BOD])
+ for y in range(54,72): d.rectangle((0,y,BGW-1,y),fill=P[BOD])
+ for y in range(72,78): d.rectangle((0,y,BGW-1,y),fill=P[BOD] if y%2==0 else P[BINK])
+ for y in range(78,80): d.rectangle((0,y,BGW-1,y),fill=P[BOD])
+ for x,y in ((22,12),(64,20),(102,30),(146,44),(30,50),(88,42),(140,14)): d.point((x,y),fill=P[BGWHITE])
+ def kelp(x,y0):
+  for i,y in enumerate(range(y0,77)): d.rectangle((x+(i%2),y,x+(i%2),y),fill=P[BINK])
+ kelp(48,60); kelp(120,58)
+ for x,y in ((66,64),(118,68),(30,66)): d.point((x,y),fill=P[BGYELLOW])
+ _bg_save('bg_deep',im)
+
+def gen_backdrops():
+ for f in (bg_dock,bg_factory,bg_shelf,bg_deep): f()
+ print('背景条 4 张 160x80 ->',PROPS,'并同步',RPROPS)
+
 def main():
  cmd=sys.argv[1] if len(sys.argv)>1 else 'all'
  if cmd in ('all','sprites'): gen_heroes(); gen_tokens_icons()
  if cmd in ('all','icons'): gen_module_icons()
  if cmd in ('all','font'): gen_font()
+ if cmd in ('all','bg'): gen_backdrops()
 if __name__=='__main__': main()

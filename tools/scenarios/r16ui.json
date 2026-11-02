@@ -1,0 +1,32 @@
+{
+  "args": ["-level", "S2", "-screen-width", "1440", "-screen-height", "900", "-screen-fullscreen", "0"],
+  "steps": [
+    { "do": "waitlog", "marker": "[level] S2", "timeout": 90 },
+    { "do": "wait", "sec": 2.5 },
+    { "do": "shot", "name": "base" },
+
+    { "do": "wheel", "at": [0.886, 0.45], "notches": 6, "amount": -1 },
+    { "do": "wait", "sec": 0.8 },
+    { "do": "shot", "name": "inse_thumb" },
+
+    { "do": "move", "at": [0.5444, 0.0244], "sec": 0.6 },
+    { "do": "shot", "name": "hover_sfx" },
+
+    { "do": "click", "at": [0.5444, 0.0244], "after": 0.7 },
+    { "do": "waitlog", "marker": "[sfx] 静音", "timeout": 20 },
+    { "do": "shot", "name": "muted" },
+
+    { "do": "click", "at": [0.5444, 0.0244], "after": 0.7 },
+    { "do": "waitlog", "marker": "[sfx] 取消静音", "timeout": 20 },
+
+    { "do": "click", "at": [0.05, 0.5344], "after": 0.9 },
+    { "do": "shot", "name": "pal_expand" },
+
+    { "do": "click", "at": [0.05, 0.6222], "after": 0.9 },
+    { "do": "shot", "name": "pal_expand2" },
+
+    { "do": "wheel", "at": [0.05, 0.45], "notches": 4, "amount": -1 },
+    { "do": "wait", "sec": 0.7 },
+    { "do": "shot", "name": "pal_thumb" }
+  ]
+}

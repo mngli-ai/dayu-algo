@@ -60,4 +60,26 @@ public static class Theme {
 
  /// <summary>类别色的淡底：铺在白色卡片标题带上，alpha 低到不压住黑字。</summary>
  public static Color AccentSoft(string colorKey, float alpha) { return A(Accent(colorKey), alpha); }
+
+ /// <summary>
+ /// 两个板色的定量混合（t=0 全 a、t=1 全 b）。只允许在同一个色族里拉开层次用——
+ /// UI 需要「比 Ink 浅一档的描边」「比 Honey 亮一档的悬停」这类中间调，但板外不许出现新色相，
+ /// 所以一律以常量落地并在下一行注明混合自哪两个板色，方便和美术对色。
+ /// </summary>
+ public static Color32 Mix(Color32 a, Color32 b, float t)
+ {
+  return new Color32(
+   (byte)Mathf.RoundToInt(a.r + (b.r - a.r) * t),
+   (byte)Mathf.RoundToInt(a.g + (b.g - a.g) * t),
+   (byte)Mathf.RoundToInt(a.b + (b.b - a.b) * t),
+   255);
+ }
+
+ // —— 以下 6 个是 UI 质感层（双层描边 / 悬停 / 按下）用到的中间调，全部由上面的 Mix 从 16 色板量化混合 ——
+ public static Color32 InkSoft = Mix(Ink, Foam, .55f);       // #9AACB1 = Mix(Ink,Foam,.55) 双层描边的内圈：外圈 Ink 才读得出两层
+ public static Color32 InkPress = Mix(Ink, WhaleDeep, .5f);  // #335E69 = Mix(Ink,WhaleDeep,.5) 按下态描边：同色族、更冷更深
+ public static Color32 SaltPress = Mix(Salt, Ink, .18f);     // #D1CEC2 = Mix(Salt,Ink,.18) 按下态底色：比 Salt 沉一档
+ public static Color32 HoneyLift = Mix(Honey, Cream, .42f);  // #FAD39D = Mix(Honey,Cream,.42) 主按钮悬停：Honey 加高光
+ public static Color32 HoneyPress = Mix(Honey, HoneyDeep, .55f); // #E69F4C = Mix(Honey,HoneyDeep,.55) 主按钮按下
+ public static Color32 ShadeSoft = Mix(Salt, Ink, .28f);     // #BEBFB5 = Mix(Salt,Ink,.28) 面板下沿 1px 内暗边
 }

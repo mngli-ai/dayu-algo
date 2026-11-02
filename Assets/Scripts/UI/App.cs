@@ -73,7 +73,7 @@ public sealed class App : MonoBehaviour
     bool batchSolution;          // -solution 批跑：只把答案铺上画布截图，绝不写玩家的档
     bool previewAnswer;          // 正在看标准答案：挂起自动存档、禁用提交
     Graph previewReturn;         // 进预览前玩家自己的那份图
-    PixelButton btnUndo, btnRedo, btnSubmit;
+    PixelButton btnUndo, btnRedo, btnSubmit, btnMute;
     GameObject operatorModal;
     GraphNode operatorNode;
     string editVarA, editVarB, editOp;
@@ -105,6 +105,7 @@ public sealed class App : MonoBehaviour
     void Awake()
     {
         I = this;
+        SoundSystem.Ensure();     // 全线发声的前提：没有这个实例，Play() 一律静默
 
         ApplyDisplayMode();
 
@@ -140,6 +141,8 @@ public sealed class App : MonoBehaviour
         Stretch(grid);
         var gridG = grid.gameObject.AddComponent<GridGraphic>();
         gridG.raycastTarget = false;
+        // 画布暗角：压在点阵之上、卡片之下，只压背景不会把卡片和文字蒙灰；不吃射线
+        UiKit.Vignette(CanvasHost);
 
         // 周边栏与画布之间压一条 2px 沙色分隔，面板和画布才分得开
         Divider(root, "DivTop",    0,    42,  1440, 2);
@@ -160,6 +163,10 @@ public sealed class App : MonoBehaviour
         GraphCanvas = GraphView.Create(CanvasHost);
         // 截图验收要的是「已经落定」的画面：相机补间和卡片淡入在 -shot 下直接跳到终态
         GraphCanvas.InstantView = HasArg("-shot");
+        UiKit.Instant = GraphCanvas.InstantView;   // 按钮浮起/滚动条一类的补间也一起跳过，截图才截得到落定的画面
+        // 关卡背景压在点阵与卡片之下；截图模式同样不许留半截淡入
+        var backdrop = Backdrop.Attach(CanvasHost, grid);
+        backdrop.Instant = GraphCanvas.InstantView;
         // 覆盖层放到画布之后绘制，token / 提示才不会被节点卡片压住（它本身不接收射线）
         OverlayLayer.SetAsLastSibling();
 
@@ -253,6 +260,7 @@ public sealed class App : MonoBehaviour
         // 第十三轮验收：本机鼠标被别的程序占住时，这四条用真 handler + PrintWindow 出证
         if (HasArg("-insecollapse")) StartCoroutine(InspectorCollapseDemo());
         if (HasArg("-insewheel")) StartCoroutine(InspectorWheelDemo());
+        if (HasArg("-insekeep")) StartCoroutine(InspectorKeepScrollDemo());
         if (HasArg("-dropghost")) StartCoroutine(DropGhostDemo());
         if (HasArg("-pushexpr")) StartCoroutine(PushExprDemo());
         if (HasArg("-complete")) StartCoroutine(CompletionDemo());
@@ -681,6 +689,76 @@ public sealed class App : MonoBehaviour
         Debug.Log("[insewheel] 已滚到底 内容 y=" + inspectorContent.anchoredPosition.y.ToString("F0"));
     }
 
+    // 「看提示」按钮与 -insekeep 自检走同一条路径，验收打的才是玩家真按的那一下。
+    void ToggleTips()
+    {
+        tipsOpen = !tipsOpen;
+        SoundSystem.Play("toggle");
+        RebuildInspector(selectedNode);
+    }
+
+    // -insekeep：右侧题栏「滚动位置」的进程内验收。滚轮走出偏移后，同关内的每次重排
+    // （点开提示、选中模块、收起提示）都必须停在原位或按真实可滚高钳位，绝不允许弹回 0；
+    // 只有换关才回顶。全程不投鼠标事件——本机前台被系统浮窗占住时也能出证。
+    IEnumerator InspectorKeepScrollDemo()
+    {
+        // 存档改道到一次性目录：这条演示会换关、写 meta，不该碰玩家真进度
+        SaveSystem.OverrideRoot = System.IO.Path.Combine(Application.persistentDataPath, "saves_demo_insekeep");
+        yield return new WaitForSeconds(1.4f);
+        if (inspectorScroll == null || inspectorContent == null) { Debug.Log("[insekeep] 题栏还没建起来"); yield break; }
+        int fails = 0;
+        for (int i = 0; i < 4; i++)
+            inspectorScroll.OnScroll(new PointerEventData(EventSystem.current) { scrollDelta = new Vector2(0f, -1f) });
+        yield return new WaitForSeconds(.5f);
+        float a = inspectorScroll.Offset;
+        if (a <= 0f) { fails++; Debug.Log("[insekeep] 滚四格 期望 y>0 实际 y=" + a.ToString("F0") + " ·错（这一关题栏太短，滚不动，后面的判定没有意义）"); }
+        else Debug.Log("[insekeep] 滚四格 y=" + a.ToString("F0") + " ·对");
+
+        ToggleTips();
+        yield return new WaitForSeconds(.6f);
+        fails += KeepStep("点开提示", a);
+
+        GraphNode first = null;
+        var g = GraphCanvas != null ? GraphCanvas.CurrentGraph : null;
+        if (g != null && g.Nodes != null)
+            foreach (var n in g.Nodes)
+                if (n != null && !n.Type.StartsWith("sample", StringComparison.Ordinal)) { first = n; break; }
+        if (first != null) OnNodeSelected(first);
+        fails += KeepStep(first != null ? "选中「" + first.Type + "」" : "画布上没有模块", a);
+
+        ToggleTips();
+        yield return new WaitForSeconds(.6f);
+        // 收起提示后内容变矮，允许被真实可滚高钳住，但不允许归零
+        fails += KeepStep("收起提示", a);
+
+        string next = null;
+        var all = Levels.All;
+        if (all != null && level != null)
+            for (int i = 0; i < all.Count; i++)
+                if (all[i] != null && all[i].Id == level.Id && i + 1 < all.Count) { next = all[i + 1].Id; break; }
+        if (next != null)
+        {
+            LoadLevel(next);
+            yield return new WaitForSeconds(1.4f);
+            float got = inspectorScroll != null ? inspectorScroll.Offset : -1f;
+            bool ok = Mathf.Abs(got) < .5f;
+            if (!ok) fails++;
+            Debug.Log("[insekeep] 换到 " + next + " 期望 y=0 实际 y=" + got.ToString("F0") + (ok ? " ·对" : " ·错"));
+        }
+        Debug.Log("[insekeep] 判定 " + (fails == 0 ? "通过" : fails + " 项不符") + " 可滚高=" +
+                  (inspectorScroll != null ? inspectorScroll.MaxScroll.ToString("F0") : "?"));
+    }
+
+    // 同关重排后该停在哪儿：期望值由那条纯函数给出，钳位与滚轮共用同一套规则
+    int KeepStep(string name, float before)
+    {
+        float want = PaletteScroll.OffsetAfter(false, before, inspectorScroll.MaxScroll);
+        float got = inspectorScroll.Offset;
+        bool ok = Mathf.Abs(want - got) < .5f;
+        Debug.Log("[insekeep] " + name + " 期望 y=" + want.ToString("F0") + " 实际 y=" + got.ToString("F0") + (ok ? " ·对" : " ·错"));
+        return ok ? 0 : 1;
+    }
+
     // -dropghost：把「新模块拖到旧模块身上、还没松手」那一帧钉住 ——
     // 先铺虚线落点（PreviewDropTarget），留时间截图，再按同一个屏幕点真正落子，看相邻方位与间隔。
     IEnumerator DropGhostDemo()
@@ -1063,7 +1141,7 @@ public sealed class App : MonoBehaviour
         headerLevel = Label(TopBarRect, "第一章 · 入门 / 两数之和", 300, 8, Theme.Ink, 2);
         SetLines(headerLevel, Fit(headerLevel.Text, HeaderLevelW, 2), 0f);
 
-        string[] btns = { "全屏", "菜单", "提交", "运行", "单步", "撤销", "恢复", "重来", "断点", "跟踪", "布局", "适应", "速度" };
+        string[] btns = { "音效", "全屏", "菜单", "提交", "运行", "单步", "撤销", "恢复", "重来", "断点", "跟踪", "布局", "适应", "速度" };
         const float gap = 8f, rightPad = 12f, btnH = 26f;
         // 按钮组整体贴右：窗口变宽时整组跟着右边走，不会悬在顶栏中间
         var holder = Child("TopButtons", TopBarRect);
@@ -1076,7 +1154,8 @@ public sealed class App : MonoBehaviour
         {
             string name = btns[i];
             System.Action click = null;
-            if (name == "运行") click = RunInput;
+            if (name == "音效") click = ToggleMuteClick;
+            else if (name == "运行") click = RunInput;
             else if (name == "单步") click = StepOnce;
             else if (name == "撤销") click = DoUndoClick;
             else if (name == "恢复") click = DoRedoClick;
@@ -1089,10 +1168,12 @@ public sealed class App : MonoBehaviour
             else if (name == "提交") click = SubmitLevel;
             else if (name == "速度") click = CycleRunSpeed;
             else if (name == "布局") click = TogglePortLayout;
-            var b = PixelButton.Create(holder, name, click, 0, (int)btnH, name == "提交");
+            // 按钮一律给一声按下的回执，动作没生效（被守卫挡掉）也照样回执——那是两件事
+            var b = PixelButton.Create(holder, name, () => { SoundSystem.Play("click"); if (click != null) click(); }, 0, (int)btnH, name == "提交");
             if (name == "撤销") btnUndo = b;
             else if (name == "恢复") btnRedo = b;
             else if (name == "提交") btnSubmit = b;
+            else if (name == "音效") btnMute = b;
             created.Add(b);
             total += b.Rect.sizeDelta.x + (i > 0 ? gap : 0f);
         }
@@ -1120,6 +1201,16 @@ public sealed class App : MonoBehaviour
             if (btnRedo != null) btnRedo.SetEnabled(GraphCanvas.CanRedo);
         }
         if (btnSubmit != null) btnSubmit.SetEnabled(!previewAnswer);
+        if (btnMute != null) btnMute.SetLabel(SoundSystem.IsMuted ? "静音" : "音效");
+    }
+
+    // 顶栏「音效」钮：静音状态存 PlayerPrefs，下次进来还是玩家上次那个选择
+    void ToggleMuteClick()
+    {
+        bool m = SoundSystem.ToggleMute();
+        if (btnMute != null) btnMute.SetLabel(m ? "静音" : "音效");
+        Toast(m ? "已静音" : "已恢复音效");
+        Debug.Log("[sfx] " + (m ? "静音" : "取消静音") + " 音量=" + SoundSystem.Volume.ToString("F2"));
     }
 
     // 撤销会把整张图换成历史里的新对象，App 攥着的那份引用必须一起放手，否则检查器还在讲一个已经没了的模块
@@ -1127,6 +1218,7 @@ public sealed class App : MonoBehaviour
     {
         if (GraphCanvas == null || !GraphCanvas.CanUndo) return;
         GraphCanvas.DoUndo();
+        SoundSystem.Play("undo");
         AfterHistoryChange("已撤销一步");
     }
 
@@ -1134,6 +1226,7 @@ public sealed class App : MonoBehaviour
     {
         if (GraphCanvas == null || !GraphCanvas.CanRedo) return;
         GraphCanvas.DoRedo();
+        SoundSystem.Play("redo");
         AfterHistoryChange("已恢复一步");
     }
 
@@ -1180,6 +1273,7 @@ public sealed class App : MonoBehaviour
             SetMessage("提交失败：" + (e0 != null ? e0.Message : "编译错误"));
             if (e0 != null && !string.IsNullOrEmpty(e0.NodeUid)) GraphCanvas.HighlightNode(e0.NodeUid, true);
             Toast("提交失败：编译没通过");
+            SoundSystem.Play("error");
             return;
         }
         if (level.Tests == null || level.Tests.Count == 0) { Toast("这关没有测试样例"); return; }
@@ -1211,6 +1305,7 @@ public sealed class App : MonoBehaviour
 
             var run = Vm.Run(prog, t.Input);
             bool ok = run != null && run.Ok && run.Output == t.Output;
+            SoundSystem.Play(ok ? "pass" : "fail");
             if (ok) { pass++; if (open) vpass++; else hpass++; }
             else
             {
@@ -1254,6 +1349,7 @@ public sealed class App : MonoBehaviour
             SetMessage("还没合格：" + pass + " / " + total + " 通过（样板 " + vpass + "/" + wantV +
                        "、抽查 " + hpass + "/" + wantH + "）· " + string.Join("；", bad.ToArray()));
             Toast("还有 " + fail + " 条没过（样板 + 抽查共 " + total + " 条）· 连错 " + Failures(level.Id) + " 次");
+            SoundSystem.Play("fail");
             Debug.Log("[submit] " + level.Id + " pass=" + pass + " fail=" + fail);
         }
     }
@@ -1277,6 +1373,8 @@ public sealed class App : MonoBehaviour
     {
         SetCleared(level.Id);
         var next = NextLevel(level.Id);
+        // 本关通过给四音琶音，整套关卡全打通才给和弦——两个都留会同帧糊成一团
+        SoundSystem.Play(next == null ? "clear" : "ac");
         string line = "样板 " + visiblePassed + " 条 + 抽查 " + hiddenPassed + " 条全部通过";
         string body = next == null
             ? line + "\n" + Levels.All.Count + " 关全部打通，没有更多关卡了。"
@@ -1541,7 +1639,7 @@ public sealed class App : MonoBehaviour
         var list = new List<PixelButton>();
         for (int i = 0; i + 1 < textActionPairs.Length; i += 2)
         {
-            var b = PixelButton.Create(parent, (string)textActionPairs[i], (Action)textActionPairs[i + 1], 0, 28, i == 0);
+            var b = PixelButton.Create(parent, (string)textActionPairs[i], () => { SoundSystem.Play("click"); ((Action)textActionPairs[i + 1])?.Invoke(); }, 0, 28, i == 0);
             list.Add(b);
         }
         float total = 0f;
@@ -1610,7 +1708,7 @@ public sealed class App : MonoBehaviour
         h1.raycastTarget = false;
         var h2 = MenuLine(col, 192, "调参：单击选中模块，双击直接改表达式", Theme.Ink, 2);
         h2.raycastTarget = false;
-        var credit = MenuLine(col, 236, "主角形象：溟月（第三方授权素材）", Theme.Whale, 2);
+        var credit = MenuLine(col, 236, "主角：大肥鱼（形象借第三方素材·溟月）", Theme.Whale, 2);
         credit.raycastTarget = false;
         var total = MenuLine(col, 268, "共 " + Levels.All.Count + " 关 · 已通过 " + cleared + " 关", Theme.Whale, 2);
         total.raycastTarget = false;
@@ -1810,6 +1908,8 @@ public sealed class App : MonoBehaviour
         paletteContent.pivot = new Vector2(0, 1);
         paletteContent.sizeDelta = new Vector2(viewW, viewH);
         paletteScroll.Content = paletteContent;
+        // 4px 细滚动条：贴左栏右边缘、与视口等高；挂在 PaletteRect 上（视口自己带 RectMask2D，挂里面 thumb 会被裁）
+        ScrollBar.Attach(PaletteRect, paletteScroll, viewH, 5f, 36f);
         RebuildPalette();
     }
 
@@ -1926,6 +2026,7 @@ public sealed class App : MonoBehaviour
         if (string.IsNullOrEmpty(cat)) return;
         if (!paletteCollapsed.Add(cat)) paletteCollapsed.Remove(cat);
         Debug.Log("[交互] 模块栏目录 " + cat + (paletteCollapsed.Contains(cat) ? " 收起" : " 展开"));
+        SoundSystem.Play("toggle");
         RebuildPalette();
     }
 
@@ -1935,6 +2036,7 @@ public sealed class App : MonoBehaviour
         if (string.IsNullOrEmpty(key)) return;
         if (!paletteCollapsedSubs.Add(key)) paletteCollapsedSubs.Remove(key);
         Debug.Log("[交互] 模块栏二级目录 " + key + (paletteCollapsedSubs.Contains(key) ? " 收起" : " 展开"));
+        SoundSystem.Play("toggle");
         RebuildPalette();
     }
 
@@ -2058,6 +2160,7 @@ public sealed class App : MonoBehaviour
     public void ToggleInspectorCollapsed()
     {
         inspectorCollapsed = !inspectorCollapsed;
+        SoundSystem.Play("toggle");
         float from = inspectorCollapsed ? InspectorW : 0f;
         float to = inspectorCollapsed ? 0f : InspectorW;
         if (inspectorSlideCo != null) StopCoroutine(inspectorSlideCo);
@@ -2088,6 +2191,8 @@ public sealed class App : MonoBehaviour
         inspectorContent.pivot = new Vector2(0, 1);
         inspectorContent.sizeDelta = new Vector2(w, h);
         inspectorScroll.Content = inspectorContent;
+        // 题栏滚动条：贴栏右沿；栏宽为 0（收起）时整条自动隐藏
+        ScrollBar.Attach(InspectorRect, inspectorScroll, h, 5f, 0f);
         RebuildInspector(null);
     }
 
@@ -2107,10 +2212,13 @@ public sealed class App : MonoBehaviour
         if (previewAnswer) { previewAnswer = false; previewReturn = null; }   // 换关一律退出答案预览
         level = lv;
         if (level == null) { Debug.LogError("[level] 找不到关卡 " + id); return; }
+        Backdrop.SetChapterFor(level.Chapter);   // 章节换背景：数组关货架、循环关厂房、栈队列关深海
 
         StopRun();
+        SoundSystem.StopAll();   // 换关掐掉上一关还在播的通关长音，否则两关的庆祝音叠在一起
         HideMenu();          // 任何一次换关都要把菜单收起来，否则画布被盖住
         tipsOpen = false;    // 换关重新折回一句题干
+        if (inspectorScroll != null) inspectorScroll.ScrollToTop();   // 换关才回顶，同关重排原位不动
         events.Clear(); eventCursor = 0; playTotal = 0;
         lastRun = null; currentEvent = null;
         lastInput = FirstTestInput();                     // 未运行时变量区先给一个输入预览
@@ -2158,6 +2266,7 @@ public sealed class App : MonoBehaviour
 
         int nodes = GraphCanvas != null && GraphCanvas.CurrentGraph != null ? GraphCanvas.CurrentGraph.Nodes.Count : 0;
         Debug.Log("[level] " + level.Id + " " + level.Chapter + " · " + level.Title + "，节点 " + nodes + "，首个测试输入「" + FirstTestInput() + "」");
+        SoundSystem.Play("levelin");
     }
 
     long Updated(string id)
@@ -2434,6 +2543,7 @@ public sealed class App : MonoBehaviour
         SetMessage(on ? "已设置断点：" + node.Type + "，运行时会在此停下" : "已取消断点：" + node.Type);
         RebuildInspector(node);
         Debug.Log("[breakpoint] " + node.Uid + " -> " + (on ? "on" : "off"));
+        SoundSystem.Play("toggle");
     }
 
     // 连线成功：回报一句，玩家才知道刚才那一下真的接上了
@@ -2445,6 +2555,7 @@ public sealed class App : MonoBehaviour
         SetMessage(msg);
         Toast(msg);
         Debug.Log("[link] " + from.Uid + " → " + to.Uid);
+        SoundSystem.Play("link");
     }
 
     // 第一次拉线时教一次怎么连
@@ -2461,7 +2572,9 @@ public sealed class App : MonoBehaviour
         GraphCanvas.DeleteNode(node.Uid);
         ClearBadges();
         RebuildInspector(null);
-        Toast("已删除模块：" + node.Type);
+        var def = NodeTypes.Get(node.Type);
+        Toast("已删除模块：" + (def != null ? def.Title : node.Type));
+        SoundSystem.Play("del");
     }
 
     // ---------------- 即时编译（编辑后马上重算，状态栏不挂旧报错） ----------------
@@ -3186,7 +3299,9 @@ public sealed class App : MonoBehaviour
             go.SetActive(false);                             // 立即隐藏，避免 Destroy 延迟一帧导致重影
             Destroy(go);
         }
-        if (inspectorScroll != null) inspectorScroll.SetExtent(0f);
+        // 这里原来有一句 SetExtent(0f)：拆掉旧条目重建时先把偏移钳回 0，
+        // 于是点「看提示」、点画布上的模块都会把玩家正在读的那一段弹回顶部。
+        // 位置交给 FinishInspector 的 SetExtent(真实可滚高) 去钳，重建过程中不动它。
 
         float y = 10f;
         // 收起时栏宽为 0，内容已经在屏幕外：折行仍按满宽算，不然 0 宽会把整段题面折成一屏单字
@@ -3250,7 +3365,7 @@ public sealed class App : MonoBehaviour
             if (hasHelp)
             {
                 var tipsBtn = PixelButton.Create(host, tipsOpen ? "收起提示" : "看提示",
-                    () => { tipsOpen = !tipsOpen; RebuildInspector(selectedNode); }, 132, 30, false, 2);
+                    () => ToggleTips(), 132, 30, false, 2);
                 tipsBtn.Rect.anchoredPosition = new Vector2(10f, -y);
                 y += 40f;
                 if (tipsOpen)
@@ -3373,7 +3488,7 @@ public sealed class App : MonoBehaviour
     void BuildFooter()
     {
         // 署名整行居中：锚点拉满底栏，窗口多宽都居中，不会偏在左边 1440 里
-        var t = Label(FooterRect, "主角形象为第三方作品：原型溟月（B站@上善无形）· 女仆版@ZipZipPipe · 动画@Small-tailqwq · CC BY-NC-SA 4.0 非商业", 0, 4, Theme.WhaleDeep, 2);
+        var t = Label(FooterRect, "主角形象为第三方作品：原型溟月（B站@上善无形）· 女仆版@ZipZipPipe · 动画@Small-tailqwq · CC BY-NC-SA 4.0 非商业 · 各 AI 形象均为同人虚构", 0, 4, Theme.WhaleDeep, 2);
         var rt = t.rectTransform;
         rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one;
         rt.offsetMin = Vector2.zero; rt.offsetMax = Vector2.zero;
@@ -3511,6 +3626,7 @@ public sealed class App : MonoBehaviour
         runMode = mode;
         if (level == null) LoadLevel("L1");
         Debug.Log("[run] 启动会话 mode=" + mode);
+        SoundSystem.Play("run");
         runRoutine = StartCoroutine(RunRoutine());
     }
 
@@ -3545,6 +3661,7 @@ public sealed class App : MonoBehaviour
             SetStep(0, 0);
             if (e0 != null && !string.IsNullOrEmpty(e0.NodeUid)) GraphCanvas.HighlightNode(e0.NodeUid, true);
             Debug.Log("[run] 编译失败：" + (e0 != null ? e0.NodeUid + " " + msg : msg));
+            SoundSystem.Play("error");
             return false;
         }
 
@@ -3674,6 +3791,7 @@ public sealed class App : MonoBehaviour
     void PlayEvent(TraceEvent ev)
     {
         if (ev == null) return;
+        SoundSystem.Play(SoundSystem.CueForVmEventKind(ev.Kind));
         GraphCanvas.ClearHighlight();
         if (!string.IsNullOrEmpty(ev.Uid)) GraphCanvas.HighlightNode(ev.Uid, true);
         SetStep(ev.I + 1, events.Count);
@@ -4510,17 +4628,32 @@ public sealed class App : MonoBehaviour
     }
 
     // 模块栏滚动：条目比视口高时，滚轮上下挪内容
-    sealed class PaletteScroll : MonoBehaviour, IScrollHandler
+    public sealed class PaletteScroll : MonoBehaviour, IScrollHandler
     {
         public RectTransform Content;
         float maxScroll;
         float offset;
+        // 重排之后该停在哪儿，单独抽成纯函数：换关回顶，其余（点「看提示」、点画布上的模块、
+        // 选中项变了）保住原位；新内容比原来矮就钳到底，负数当顶。
+        public static float OffsetAfter(bool levelChanged, float before, float newMax)
+        {
+            if (levelChanged) return 0f;
+            float max = newMax > 0f ? newMax : 0f;
+            if (before < 0f) return 0f;
+            return before > max ? max : before;
+        }
         public void SetExtent(float max)
         {
             maxScroll = Mathf.Max(0f, max);
-            offset = Mathf.Clamp(offset, 0f, maxScroll);
+            offset = OffsetAfter(false, offset, maxScroll);
             Apply();
         }
+        // 换关：只有这一条路径把位置退回顶部
+        public void ScrollToTop() { offset = 0f; Apply(); }
+        public float Offset { get { return offset; } }
+        // 给滚动条用：只读当前可滚量 + 由外部（拖 thumb）指定位置，钳位规则与滚轮一致
+        public float MaxScroll { get { return maxScroll; } }
+        public void ScrollTo(float want) { offset = OffsetAfter(false, want, maxScroll); Apply(); }
         public void OnScroll(PointerEventData e)
         {
             if (Content == null || maxScroll <= 0f) return;
@@ -4693,7 +4826,10 @@ public sealed class App : MonoBehaviour
         // 自动存档的去抖时钟：pending 由有变无就是刚落了一次盘，进度元信息跟着写一次
         bool wasPending = SaveSystem.HasPending;
         SaveSystem.Tick(Time.realtimeSinceStartupAsDouble);
-        if (wasPending && !SaveSystem.HasPending) SaveProgressMeta();
+        if (wasPending && !SaveSystem.HasPending) { SaveProgressMeta(); SoundSystem.Play("save"); }
+        // 背景跟着镜头慢半拍（远 0.12 / 近 0.30），画布平移时才有纵深
+        if (GraphCanvas != null && GraphCanvas.ContentTransform != null)
+            Backdrop.SetCameraFor(GraphCanvas.ContentTransform.anchoredPosition, GraphCanvas.Zoom);
         if (Input.GetKeyDown(KeyCode.F9) && GraphCanvas != null)
         {
             rectDumpSeq++;

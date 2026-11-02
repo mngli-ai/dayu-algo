@@ -909,6 +909,7 @@ public sealed class GraphView : MonoBehaviour, IPointerDownHandler, IPointerUpHa
         RefreshLines();
         RefreshScopeFields();
         RaiseGraphChanged();
+        SoundSystem.Play("place");
         Debug.Log("[add] " + type + " " + uid + " 节点数 " + graph.Nodes.Count + " 可撤销=" + history.CanUndo);
     }
 
@@ -1464,6 +1465,7 @@ public sealed class GraphView : MonoBehaviour, IPointerDownHandler, IPointerUpHa
         RefreshLines();
         RefreshScopeFields();
         RaiseGraphChanged();
+        SoundSystem.Play("unlink");   // 只有真删掉一条线才响，点空了不回执
         return true;
     }
 
@@ -1650,6 +1652,7 @@ public sealed class GraphView : MonoBehaviour, IPointerDownHandler, IPointerUpHa
     }
     public void DeleteSelected()
     {
+        bool any = false;
         for (int i = graph.Nodes.Count - 1; i >= 0; i--)
         {
             var n = graph.Nodes[i];
@@ -1660,10 +1663,12 @@ public sealed class GraphView : MonoBehaviour, IPointerDownHandler, IPointerUpHa
             cards.Remove(id);
             graph.Nodes.RemoveAt(i);
             graph.Links.RemoveAll(l => l.FromNode == id || l.ToNode == id);
+            any = true;
         }
         RefreshLines();
         RefreshScopeFields();
         RaiseGraphChanged();
+        if (any) SoundSystem.Play("del");   // 批量删只给一声，这条 cue 的 0.07s 去抖会把连点删几块压成一下
     }
     void Update()
     {

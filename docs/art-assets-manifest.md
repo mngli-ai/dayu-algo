@@ -37,6 +37,23 @@
 | whale_carry_box_32x32_6f.png | 192×32 | 6 | 鲸鱼娘抱着数字箱搬运 | 基于项目已有 hero_carry.png 二次加工 |
 | contact_sheet.png | 880×1980 | 预览 | 资产总览 | 本项目生成 |
 
+## 文件清单 —— 关卡背景条（第十六轮新增，项目内程序化绘制）
+
+由 `tools/gen_art.py` 的 `gen_backdrops()` 生成（`python tools/gen_art.py bg`），只用 16 色色板 + 全透明，alpha 仅取 0 / 255。源图在 `Assets/Art/Props/`，运行时副本在 `Assets/Resources/Props/`（`gen_backdrops()` 用 `write_bytes` 同步，逐字节一致）。
+
+| 文件 | 尺寸 | 用途（章节映射见 `Backdrop.TextureKeyFor`） |
+| --- | --- | --- |
+| bg_dock.png | 160×80 | 序章其余小节的码头吊臂 + 货轮 + 木栈桥（默认回落贴图） |
+| bg_factory.png | 160×80 | 「条件分支」「循环」的厂房屋脊 + 水塔 + 烟囱 + 传送带 |
+| bg_shelf.png | 160×80 | 「数组」小节（L3/L4）的货架排 + 箱格 |
+| bg_deep.png | 160×80 | 「栈」「队列」及第一章的深海渐层带 |
+
+平铺契约：贴边横带两端同色、剪影不触左右缘，横向无缝；上半 40 行为远景层、下半 40 行为近景层，`Backdrop` 运行时各切一张 sprite 并按 0.12 / 0.30 视差系数错位铺 `⌈W/瓦宽⌉+1` 条。校验：`python Evidence/r16/verify_bg.py`（尺寸、色板越界、alpha、透明比例、接缝）。
+
+## 文件清单 —— 音效（第十六轮新增，程序化合成，无第三方音源）
+
+`tools/gen_sfx.py` 用 numpy 现算带限方波 / 三角 / 噪声 + A-D 包络，17 条 cue 落到 `Assets/Resources/Audio/<cue>.wav`（44100Hz·16bit·单声道，合计 245.8KB，最长 0.49s，峰值全部 ≤0.8，已减 DC、首尾淡入淡出）。噪声用固定种子，`--check` 会比对磁盘文件与现算结果，防止「改了脚本没重新生成」。运行时由 `SoundSystem` 池化 6 路 + 每 cue 去抖播放。
+
 ## 文件清单 —— 第三方主角形象（派生）
 
 这四张是游戏实际加载的主角素材，全部由 `ArtInbox/SOURCES.md` 里登记的第三方原图派生而来，**项目内未画一笔主角形象**。派生方式只有抽帧、裁包围盒、LANCZOS 缩放，属许可允许的修改，按规则逐条记为「修改」。
