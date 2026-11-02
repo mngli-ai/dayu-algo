@@ -1,0 +1,18 @@
+{
+  "args": [
+    "-level", "S1", "-solution", "-complete",
+    "-screen-width", "1600", "-screen-height", "1000", "-screen-fullscreen", "0"
+  ],
+  "steps": [
+    { "do": "waitlog", "marker": "候选", "timeout": 60 },
+    { "do": "shot", "name": "popup" },
+    { "do": "key", "name": "down" },
+    { "do": "shot", "name": "down1" },
+    { "do": "key", "name": "down" },
+    { "do": "shot", "name": "down2" },
+    { "do": "key", "name": "up" },
+    { "do": "shot", "name": "up1" },
+    { "do": "key", "name": "tab" },
+    { "do": "shot", "name": "inserted" }
+  ]
+}

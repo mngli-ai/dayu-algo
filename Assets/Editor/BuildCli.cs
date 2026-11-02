@@ -1,0 +1,2 @@
+using UnityEditor; using UnityEditor.Build.Reporting; using UnityEngine;
+namespace Dayu.EditorTools { public static class BuildCli { public static void BuildWindows(){ImportSettings.Apply();var opts=new BuildPlayerOptions{scenes=new[]{"Assets/Scenes/Main.unity"},locationPathName="Build/dayu.exe",target=BuildTarget.StandaloneWindows64,options=BuildOptions.None};var r=BuildPipeline.BuildPlayer(opts);Debug.Log(r.summary.result);}}}

@@ -1,0 +1,321 @@
+{
+ "args": [
+  "-level",
+  "L4",
+  "-solution",
+  "-screen-width",
+  "1600",
+  "-screen-height",
+  "1000",
+  "-screen-fullscreen",
+  "0"
+ ],
+ "steps": [
+  {
+   "do": "wait",
+   "sec": 16.0
+  },
+  {
+   "do": "drag",
+   "from": [
+    0.053,
+    0.383
+   ],
+   "to": [
+    0.62,
+    0.3
+   ],
+   "steps": 16,
+   "slice": 0.04,
+   "after": 0.8
+  },
+  {
+   "do": "double",
+   "at": [
+    0.62,
+    0.3
+   ]
+  },
+  {
+   "do": "wait",
+   "sec": 1.0
+  },
+  {
+   "do": "shot",
+   "name": "01-var-open"
+  },
+  {
+   "do": "click",
+   "at": [
+    0.3225,
+    0.795
+   ]
+  },
+  {
+   "do": "wait",
+   "sec": 0.6
+  },
+  {
+   "do": "shot",
+   "name": "02-second-field"
+  },
+  {
+   "do": "key",
+   "name": "tab"
+  },
+  {
+   "do": "wait",
+   "sec": 0.5
+  },
+  {
+   "do": "shot",
+   "name": "03-tab-to-1"
+  },
+  {
+   "do": "key",
+   "name": "tab",
+   "with": [
+    "shift"
+   ]
+  },
+  {
+   "do": "wait",
+   "sec": 0.5
+  },
+  {
+   "do": "shot",
+   "name": "04-shifttab-to-2"
+  },
+  {
+   "do": "key",
+   "name": "5"
+  },
+  {
+   "do": "wait",
+   "sec": 0.4
+  },
+  {
+   "do": "shot",
+   "name": "05-typed"
+  },
+  {
+   "do": "click",
+   "at": [
+    0.2625,
+    0.843
+   ]
+  },
+  {
+   "do": "wait",
+   "sec": 0.9
+  },
+  {
+   "do": "shot",
+   "name": "06-var-card"
+  },
+  {
+   "do": "drag",
+   "from": [
+    0.053,
+    0.418
+   ],
+   "to": [
+    0.62,
+    0.62
+   ],
+   "steps": 16,
+   "slice": 0.04,
+   "after": 0.8
+  },
+  {
+   "do": "double",
+   "at": [
+    0.6375,
+    0.648
+   ]
+  },
+  {
+   "do": "wait",
+   "sec": 1.0
+  },
+  {
+   "do": "shot",
+   "name": "07-assign-open"
+  },
+  {
+   "do": "click",
+   "at": [
+    0.648,
+    0.856
+   ]
+  },
+  {
+   "do": "wait",
+   "sec": 0.5
+  },
+  {
+   "do": "shot",
+   "name": "08-chip"
+  },
+  {
+   "do": "key",
+   "name": "="
+  },
+  {
+   "do": "key",
+   "name": "space"
+  },
+  {
+   "do": "key",
+   "name": "["
+  },
+  {
+   "do": "key",
+   "name": "1"
+  },
+  {
+   "do": "key",
+   "name": ","
+  },
+  {
+   "do": "key",
+   "name": "2"
+  },
+  {
+   "do": "key",
+   "name": "]"
+  },
+  {
+   "do": "wait",
+   "sec": 0.5
+  },
+  {
+   "do": "shot",
+   "name": "09-statement"
+  },
+  {
+   "do": "click",
+   "at": [
+    0.663,
+    0.903
+   ]
+  },
+  {
+   "do": "wait",
+   "sec": 1.0
+  },
+  {
+   "do": "shot",
+   "name": "10-broken-msg"
+  },
+  {
+   "do": "double",
+   "at": [
+    0.6375,
+    0.648
+   ]
+  },
+  {
+   "do": "wait",
+   "sec": 1.0
+  },
+  {
+   "do": "shot",
+   "name": "11-reopen"
+  },
+  {
+   "do": "key",
+   "name": "back"
+  },
+  {
+   "do": "key",
+   "name": "back"
+  },
+  {
+   "do": "key",
+   "name": "back"
+  },
+  {
+   "do": "key",
+   "name": "back"
+  },
+  {
+   "do": "key",
+   "name": "back"
+  },
+  {
+   "do": "key",
+   "name": "back"
+  },
+  {
+   "do": "key",
+   "name": "back"
+  },
+  {
+   "do": "key",
+   "name": "back"
+  },
+  {
+   "do": "key",
+   "name": "back"
+  },
+  {
+   "do": "key",
+   "name": "back"
+  },
+  {
+   "do": "key",
+   "name": "back"
+  },
+  {
+   "do": "wait",
+   "sec": 0.3
+  },
+  {
+   "do": "shot",
+   "name": "12-cleared"
+  },
+  {
+   "do": "click",
+   "at": [
+    0.672,
+    0.856
+   ]
+  },
+  {
+   "do": "wait",
+   "sec": 0.4
+  },
+  {
+   "do": "key",
+   "name": "5"
+  },
+  {
+   "do": "wait",
+   "sec": 0.4
+  },
+  {
+   "do": "shot",
+   "name": "13-typed-valid"
+  },
+  {
+   "do": "click",
+   "at": [
+    0.663,
+    0.903
+   ]
+  },
+  {
+   "do": "wait",
+   "sec": 1.2
+  },
+  {
+   "do": "shot",
+   "name": "14-committed"
+  },
+  {
+   "do": "shot",
+   "name": "99-final"
+  }
+ ]
+}

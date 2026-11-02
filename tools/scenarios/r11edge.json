@@ -1,0 +1,9 @@
+{
+  "args": ["-level", "P4", "-solution", "-screen-width", "1600", "-screen-height", "1000", "-screen-fullscreen", "0"],
+  "steps": [
+    { "do": "wait", "sec": 3.0 },
+    { "do": "drag", "from": [0.2159, 0.2279], "to": [0.7683, 0.2279], "steps": 20, "slice": 0.04,
+      "shot_mid": "mid", "hold": 1.6, "shot_hold": "edge", "after": 0.4 },
+    { "do": "shot", "name": "released" }
+  ]
+}

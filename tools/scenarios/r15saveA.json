@@ -1,0 +1,52 @@
+{
+ "args": [
+  "-level",
+  "S2",
+  "-cardrect",
+  "-screen-width",
+  "1600",
+  "-screen-height",
+  "1000",
+  "-screen-fullscreen",
+  "0"
+ ],
+ "steps": [
+  {
+   "do": "waitlog",
+   "marker": "[rect] 模块栏 创建变量",
+   "timeout": 60
+  },
+  {
+   "do": "drag",
+   "from": [
+    0.0611,
+    0.3844
+   ],
+   "to": [
+    0.5,
+    0.6
+   ],
+   "steps": 16,
+   "hold": 1.0,
+   "after": 1.2
+  },
+  {
+   "do": "key",
+   "name": "f9",
+   "after": 0.6
+  },
+  {
+   "do": "waitlog",
+   "marker": "[rectdump] #1",
+   "timeout": 20
+  },
+  {
+   "do": "shot",
+   "name": "dropped"
+  },
+  {
+   "do": "wait",
+   "sec": 3.0
+  }
+ ]
+}

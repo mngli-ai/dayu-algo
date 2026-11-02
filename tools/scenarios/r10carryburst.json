@@ -1,0 +1,132 @@
+{
+ "args": [
+  "-level",
+  "P4",
+  "-solution",
+  "-demo",
+  "-screen-width",
+  "1600",
+  "-screen-height",
+  "1000",
+  "-screen-fullscreen",
+  "0"
+ ],
+ "steps": [
+  {
+   "do": "wait",
+   "sec": 2.0
+  },
+  {
+   "do": "shot",
+   "name": "c00"
+  },
+  {
+   "do": "wait",
+   "sec": 0.25
+  },
+  {
+   "do": "shot",
+   "name": "c01"
+  },
+  {
+   "do": "wait",
+   "sec": 0.25
+  },
+  {
+   "do": "shot",
+   "name": "c02"
+  },
+  {
+   "do": "wait",
+   "sec": 0.25
+  },
+  {
+   "do": "shot",
+   "name": "c03"
+  },
+  {
+   "do": "wait",
+   "sec": 0.25
+  },
+  {
+   "do": "shot",
+   "name": "c04"
+  },
+  {
+   "do": "wait",
+   "sec": 0.25
+  },
+  {
+   "do": "shot",
+   "name": "c05"
+  },
+  {
+   "do": "wait",
+   "sec": 0.25
+  },
+  {
+   "do": "shot",
+   "name": "c06"
+  },
+  {
+   "do": "wait",
+   "sec": 0.25
+  },
+  {
+   "do": "shot",
+   "name": "c07"
+  },
+  {
+   "do": "wait",
+   "sec": 0.25
+  },
+  {
+   "do": "shot",
+   "name": "c08"
+  },
+  {
+   "do": "wait",
+   "sec": 0.25
+  },
+  {
+   "do": "shot",
+   "name": "c09"
+  },
+  {
+   "do": "wait",
+   "sec": 0.25
+  },
+  {
+   "do": "shot",
+   "name": "c10"
+  },
+  {
+   "do": "wait",
+   "sec": 0.25
+  },
+  {
+   "do": "shot",
+   "name": "c11"
+  },
+  {
+   "do": "wait",
+   "sec": 0.25
+  },
+  {
+   "do": "shot",
+   "name": "c12"
+  },
+  {
+   "do": "wait",
+   "sec": 0.25
+  },
+  {
+   "do": "shot",
+   "name": "c13"
+  },
+  {
+   "do": "wait",
+   "sec": 0.25
+  }
+ ]
+}

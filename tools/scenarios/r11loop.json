@@ -1,0 +1,17 @@
+{
+  "args": ["-level", "P4", "-solution", "-screen-width", "1600", "-screen-height", "1000", "-screen-fullscreen", "0"],
+  "steps": [
+    { "do": "wait", "sec": 4.0 },
+    { "do": "shot", "name": "fresh" },
+    { "do": "double", "at": [0.4082, 0.496] },
+    { "do": "wait", "sec": 1.0 },
+    { "do": "shot", "name": "popover" },
+    { "do": "key", "name": "enter", "after": 0.6 },
+    { "do": "shot", "name": "aftercommit" },
+    { "do": "click", "at": [0.20, 0.85] },
+    { "do": "wait", "sec": 0.8 },
+    { "do": "shot", "name": "closed" },
+    { "do": "max", "sec": 1.5 },
+    { "do": "shot", "name": "maximized" }
+  ]
+}

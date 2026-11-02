@@ -1,0 +1,9 @@
+{
+ "args": ["-level", "P4", "-insecollapse", "-screen-width", "1600", "-screen-height", "1000", "-screen-fullscreen", "0"],
+ "steps": [
+  { "do": "waitlog", "marker": "收起态已稳定" },
+  { "do": "shot", "name": "collapsed" },
+  { "do": "waitlog", "marker": "展开态已稳定" },
+  { "do": "shot", "name": "reopened" }
+ ]
+}

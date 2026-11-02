@@ -1,0 +1,30 @@
+{
+  "frameW": 32,
+  "frameH": 32,
+  "anims": {
+    "idle": {
+      "frames": 6,
+      "fps": 6
+    },
+    "swim": {
+      "frames": 6,
+      "fps": 6
+    },
+    "carry": {
+      "frames": 6,
+      "fps": 6
+    },
+    "happy": {
+      "frames": 6,
+      "fps": 6
+    },
+    "sad": {
+      "frames": 6,
+      "fps": 6
+    },
+    "nap": {
+      "frames": 6,
+      "fps": 6
+    }
+  }
+}

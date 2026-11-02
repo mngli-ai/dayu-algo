@@ -1,0 +1,13 @@
+{
+  "args": [
+    "-level", "S1", "-solution", "-complete",
+    "-screen-width", "1600", "-screen-height", "1000", "-screen-fullscreen", "0"
+  ],
+  "steps": [
+    { "do": "waitlog", "marker": "候选", "timeout": 60 },
+    { "do": "key", "name": "esc" },
+    { "do": "shot", "name": "list-closed" },
+    { "do": "key", "name": "esc" },
+    { "do": "shot", "name": "popover-closed" }
+  ]
+}

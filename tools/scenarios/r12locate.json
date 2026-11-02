@@ -1,0 +1,19 @@
+{
+ "args": ["-level", "L4", "-solution", "-screen-width", "1600", "-screen-height", "1000", "-screen-fullscreen", "0"],
+ "steps": [
+  { "do": "wait", "sec": 16.0 },
+  { "do": "double", "at": [0.375, 0.345] },
+  { "do": "wait", "sec": 0.9 },
+  { "do": "shot", "name": "panel-var" },
+  { "do": "click", "at": [0.16, 0.92] },
+  { "do": "wait", "sec": 0.5 },
+  { "do": "double", "at": [0.370, 0.503] },
+  { "do": "wait", "sec": 0.9 },
+  { "do": "shot", "name": "panel-var2" },
+  { "do": "click", "at": [0.16, 0.92] },
+  { "do": "wait", "sec": 0.5 },
+  { "do": "double", "at": [0.4375, 0.62] },
+  { "do": "wait", "sec": 0.9 },
+  { "do": "shot", "name": "panel-assign" }
+ ]
+}

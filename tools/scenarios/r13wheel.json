@@ -1,0 +1,11 @@
+{
+ "args": ["-level", "P4", "-insewheel", "-screen-width", "1600", "-screen-height", "1000", "-screen-fullscreen", "0"],
+ "steps": [
+  { "do": "waitlog", "marker": "滚动前已稳定" },
+  { "do": "shot", "name": "top" },
+  { "do": "waitlog", "marker": "滚动完成" },
+  { "do": "shot", "name": "scrolled" },
+  { "do": "waitlog", "marker": "已滚到底" },
+  { "do": "shot", "name": "bottom" }
+ ]
+}

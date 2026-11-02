@@ -1,0 +1,25 @@
+{
+  "args": ["-level", "S2", "-cardrect", "-screen-width", "1600", "-screen-height", "1000", "-screen-fullscreen", "0"],
+  "steps": [
+    { "do": "waitlog", "marker": "[palette] 17 项", "timeout": 60 },
+    { "do": "click", "at": [0.30, 0.72], "after": 1.0 },
+    { "do": "key", "name": "f9", "after": 0.6 },
+    { "do": "waitlog", "marker": "[rectdump] #1", "timeout": 20 },
+    { "do": "shot", "name": "top" },
+    { "do": "clickrect", "label": "答案按钮", "after": 1.5 },
+    { "do": "waitlog", "marker": "[answer] S2 预览标准答案", "timeout": 20 },
+    { "do": "key", "name": "f9", "after": 0.6 },
+    { "do": "waitlog", "marker": "[rectdump] #2", "timeout": 20 },
+    { "do": "shot", "name": "preview" },
+    { "do": "clickrect", "label": "答案按钮", "after": 1.5 },
+    { "do": "waitlog", "marker": "已退出标准答案预览", "timeout": 20 },
+    { "do": "key", "name": "f9", "after": 0.6 },
+    { "do": "waitlog", "marker": "[rectdump] #3", "timeout": 20 },
+    { "do": "shot", "name": "exited" },
+    { "do": "wheel", "at": [0.8854, 0.45], "amount": -1, "notches": 60, "after": 0.8 },
+    { "do": "key", "name": "f9", "after": 0.6 },
+    { "do": "waitlog", "marker": "[rectdump] #4", "timeout": 20 },
+    { "do": "shot", "name": "bottom" },
+    { "do": "wait", "sec": 3.0 }
+  ]
+}

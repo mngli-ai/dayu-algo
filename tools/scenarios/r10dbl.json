@@ -1,0 +1,11 @@
+{
+  "args": ["-level", "P4", "-solution", "-screen-width", "1600", "-screen-height", "1000", "-screen-fullscreen", "0"],
+  "steps": [
+    { "do": "wait", "sec": 3.0 },
+    { "do": "wheel", "at": [0.415, 0.58], "ctrl": true, "notches": 4, "amount": 1 },
+    { "do": "wait", "sec": 0.6 },
+    { "do": "double", "at": [0.424, 0.645] },
+    { "do": "wait", "sec": 0.9 },
+    { "do": "shot", "name": "dbl" }
+  ]
+}

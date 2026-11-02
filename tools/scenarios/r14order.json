@@ -1,0 +1,79 @@
+{
+ "args": [
+  "-level",
+  "P4",
+  "-solution",
+  "-cardrect",
+  "-screen-width",
+  "1600",
+  "-screen-height",
+  "1000",
+  "-screen-fullscreen",
+  "0"
+ ],
+ "steps": [
+  {
+   "do": "wait",
+   "sec": 12.0
+  },
+  {
+   "do": "double",
+   "at": [
+    0.4082,
+    0.496
+   ],
+   "after": 1.0
+  },
+  {
+   "do": "shot",
+   "name": "popover"
+  },
+  {
+   "do": "click",
+   "at": [
+    0.6272,
+    0.563
+   ],
+   "after": 0.8
+  },
+  {
+   "do": "waitlog",
+   "marker": "计数循环改为",
+   "timeout": 20
+  },
+  {
+   "do": "wait",
+   "sec": 0.6
+  },
+  {
+   "do": "shot",
+   "name": "reversed"
+  },
+  {
+   "do": "click",
+   "at": [
+    0.5872,
+    0.563
+   ],
+   "after": 0.8
+  },
+  {
+   "do": "waitlog",
+   "marker": "计数循环改为「正序」",
+   "timeout": 20
+  },
+  {
+   "do": "wait",
+   "sec": 0.6
+  },
+  {
+   "do": "shot",
+   "name": "forward"
+  },
+  {
+   "do": "key",
+   "name": "esc",
+   "after": 0.5
+  }
+ ]
+}

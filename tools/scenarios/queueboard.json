@@ -1,0 +1,7 @@
+{
+  "args": ["-solution", "-queueviz", "-screen-width", "1600", "-screen-height", "1000", "-screen-fullscreen", "0"],
+  "steps": [
+    { "do": "wait", "sec": 8.0 },
+    { "do": "shot", "name": "queue-loaded" }
+  ]
+}

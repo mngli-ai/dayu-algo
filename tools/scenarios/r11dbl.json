@@ -1,0 +1,19 @@
+{
+  "args": ["-level", "P4", "-solution", "-screen-width", "1600", "-screen-height", "1000", "-screen-fullscreen", "0"],
+  "steps": [
+    { "do": "wait", "sec": 3.0 },
+    { "do": "double", "at": [0.4116, 0.3862] },
+    { "do": "wait", "sec": 0.8 },
+    { "do": "shot", "name": "dbl-plate" },
+    { "do": "click", "at": [0.16, 0.90] },
+    { "do": "wait", "sec": 0.6 },
+    { "do": "double", "at": [0.4116, 0.3575] },
+    { "do": "wait", "sec": 0.8 },
+    { "do": "shot", "name": "dbl-title" },
+    { "do": "click", "at": [0.16, 0.90] },
+    { "do": "wait", "sec": 0.5 },
+    { "do": "double", "at": [0.4116, 0.4660] },
+    { "do": "wait", "sec": 0.8 },
+    { "do": "shot", "name": "dbl-varset" }
+  ]
+}

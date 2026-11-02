@@ -1,0 +1,9 @@
+{
+  "args": ["-arrayviz", "-screen-width", "1600", "-screen-height", "1000", "-screen-fullscreen", "0"],
+  "steps": [
+    { "do": "wait", "sec": 5.0 },
+    { "do": "shot", "name": "before" },
+    { "do": "drag", "from": [0.692, 0.432], "to": [0.80, 0.55], "steps": 18, "slice": 0.03, "after": 0.6 },
+    { "do": "shot", "name": "resized" }
+  ]
+}

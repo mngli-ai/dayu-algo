@@ -1,0 +1,9 @@
+{
+  "args": ["-level", "P4", "-solution", "-screen-width", "1600", "-screen-height", "1000", "-screen-fullscreen", "0"],
+  "steps": [
+    { "do": "wait", "sec": 4.0 },
+    { "do": "double", "at": [0.4082, 0.496] },
+    { "do": "wait", "sec": 1.0 },
+    { "do": "shot", "name": "head" }
+  ]
+}

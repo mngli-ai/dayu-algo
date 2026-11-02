@@ -1,0 +1,99 @@
+{
+ "args": [
+  "-level",
+  "P4",
+  "-cardrect",
+  "-screen-width",
+  "1600",
+  "-screen-height",
+  "1000",
+  "-screen-fullscreen",
+  "0"
+ ],
+ "steps": [
+  {
+   "do": "wait",
+   "sec": 12.0
+  },
+  {
+   "do": "shot",
+   "name": "base"
+  },
+  {
+   "do": "click",
+   "at": [
+    0.7618,
+    0.4289
+   ],
+   "after": 0.6
+  },
+  {
+   "do": "waitlog",
+   "marker": "[交互] 题栏收起",
+   "timeout": 20
+  },
+  {
+   "do": "wait",
+   "sec": 0.8
+  },
+  {
+   "do": "shot",
+   "name": "collapsed"
+  },
+  {
+   "do": "click",
+   "at": [
+    0.984,
+    0.41
+   ],
+   "after": 0.6
+  },
+  {
+   "do": "waitlog",
+   "marker": "[交互] 题栏展开",
+   "timeout": 20
+  },
+  {
+   "do": "wait",
+   "sec": 0.8
+  },
+  {
+   "do": "shot",
+   "name": "reopened"
+  },
+  {
+   "do": "wheel",
+   "at": [
+    0.9,
+    0.45
+   ],
+   "notches": 3,
+   "amount": -1
+  },
+  {
+   "do": "wait",
+   "sec": 1.0
+  },
+  {
+   "do": "shot",
+   "name": "scrolled"
+  },
+  {
+   "do": "wheel",
+   "at": [
+    0.9,
+    0.45
+   ],
+   "notches": 30,
+   "amount": -1
+  },
+  {
+   "do": "wait",
+   "sec": 1.0
+  },
+  {
+   "do": "shot",
+   "name": "bottom"
+  }
+ ]
+}

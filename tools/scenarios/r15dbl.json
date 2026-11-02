@@ -1,0 +1,13 @@
+{
+  "args": ["-level", "S2", "-solution", "-cardrect", "-screen-width", "1600", "-screen-height", "1000", "-screen-fullscreen", "0"],
+  "steps": [
+    { "do": "waitlog", "marker": "[rect] vardecl declN", "timeout": 60 },
+    { "do": "double", "at": [0.3332, 0.2014], "after": 0.9 },
+    { "do": "waitlog", "marker": "[focus] vardecl 浮窗落点=name", "timeout": 20 },
+    { "do": "shot", "name": "dbl-center" },
+    { "do": "click", "at": [0.20, 0.75], "after": 0.6 },
+    { "do": "double", "at": [0.3332, 0.3040], "after": 0.9 },
+    { "do": "waitlog", "marker": "[focus] vardecl 浮窗落点=name", "timeout": 20 },
+    { "do": "shot", "name": "dbl-strip" }
+  ]
+}
