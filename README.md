@@ -4,7 +4,9 @@
 
 Unity 6 实现，全部界面与美术是运行时用代码装配的像素风 UI，没有预制体也没有场景美术。
 
-![编辑器界面](docs/screenshots/01-editor.png)
+**[下载 Windows 试玩包](https://github.com/mngli-ai/dayu-algo/releases/latest)** · [v0.1.0](https://github.com/mngli-ai/dayu-algo/releases/tag/v0.1.0) — 解压后运行 `dayu.exe`，无需安装。
+
+![两数之和跑通](docs/screenshots/01-level.png)
 
 ## 玩法
 
@@ -21,8 +23,6 @@ Unity 6 实现，全部界面与美术是运行时用代码装配的像素风 UI
 
 容器有专门的可视化：数组是列车车厢，栈是一口竖直的筒，队列是排队通道；压入弹出会跟着执行链播动画。
 
-![关卡运行](docs/screenshots/02-run.png)
-
 ## 关卡
 
 共 13 关，分两个章节。
@@ -35,6 +35,8 @@ Unity 6 实现，全部界面与美术是运行时用代码装配的像素风 UI
 - **第一章 · 栈与队列** —— 倒着出来、谁还在最上面、排队先出、括号匹配
 
 题目正文、故事、数据范围、提示、标准答案图和测试用例全部写在 `Assets/Scripts/Core/Levels.cs`，加关卡就是加一个 `new Level{...}`。
+
+![关卡选择](docs/screenshots/02-levels.png)
 
 ![开始菜单](docs/screenshots/03-menu.png)
 
