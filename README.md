@@ -4,13 +4,13 @@
 
 Unity 6 实现，全部界面与美术是运行时用代码装配的像素风 UI，没有预制体也没有场景美术。
 
-**[下载 Windows 试玩包](https://github.com/mngli-ai/dayu-algo/releases/latest)** · [v0.1.0](https://github.com/mngli-ai/dayu-algo/releases/tag/v0.1.0) — 解压后运行 `dayu.exe`，无需安装。
+**[下载 Windows 试玩包](https://github.com/mngli-ai/dayu-algo/releases/latest)** · [v0.1.1](https://github.com/mngli-ai/dayu-algo/releases/tag/v0.1.1) — 解压后运行 `dayu.exe`，无需安装。
 
-![两数之和跑通](docs/screenshots/01-level.png)
+![走哪条路：题栏故事 + 常驻样例板](docs/screenshots/01-level.png)
 
 ## 玩法
 
-一关给你半张图：起始模块和两块样例板已经摆好，缺的部分自己补。
+一关给你半张图：起始模块和两块样例板（样例输入板 / 样例对比板）已经摆好且常驻、删不掉，缺的部分自己补。
 
 | 交互 | 说明 |
 | --- | --- |
@@ -20,6 +20,10 @@ Unity 6 实现，全部界面与美术是运行时用代码装配的像素风 UI
 | 运行 / 单步 / 断点 / 跟踪 | 顶栏按钮，配合变量面板看每一步的值 |
 | 样例对比板 | 自动拿运行结果和期望输出比对，不一致就标红 |
 | 提交 | 除可见样例外还会跑隐藏抽查用例，全过才解锁下一关 |
+| 说明书 | 顶栏「说明书」随时打开：31 条模块条目 + 30 条操作条目，按 7 个分组翻页，还能跳到对应模块 |
+| 判题反馈 | 单条样例过了撒彩带、整关通过放烟花、答案错了画红叉，每个结论都配一条程序化音效 |
+
+两块样例板（样例输入板 / 样例对比板）常驻画布，删不掉也不需要自己摆。
 
 容器有专门的可视化：数组是列车车厢，栈是一口竖直的筒，队列是排队通道；压入弹出会跟着执行链播动画。
 
@@ -49,9 +53,9 @@ Unity 6 实现，全部界面与美术是运行时用代码装配的像素风 UI
 | `Assets/Scripts/UI/` | 像素 UI 组件（按钮、输入框、位图文本、面板）、模块栏、检查器、变量浮窗、数组/栈/队列看板、顶栏、存档 |
 | `Assets/Scripts/Art/` | 程序化像素素材、模块图标、精灵动画 |
 | `Assets/Scripts/Text/` | 位图字形图集 |
-| `Assets/Editor/` | 自测入口（`Cli.RunSelfTests`）、命令行打包（`BuildCli.BuildWindows`）、16 个测试类 |
+| `Assets/Editor/` | 自测入口（`Cli.RunSelfTests`）、命令行打包（`BuildCli.BuildWindows`）、26 个测试类 |
 
-约 1.9 万行 C#。
+约 3.1 万行 C#。
 
 ## 构建与运行
 
