@@ -1,0 +1,11 @@
+{
+  "args": ["-level", "P0", "-solution", "-cardrect", "-screen-width", "1440", "-screen-height", "900", "-screen-fullscreen", "0"],
+  "steps": [
+    { "do": "waitlog", "marker": "[level] P0", "timeout": 90 },
+    { "do": "wait", "sec": 2.5 },
+    { "do": "key", "name": "f9" },
+    { "do": "waitlog", "marker": "[rectdump] #1", "timeout": 20 },
+    { "do": "wait", "sec": 0.6 },
+    { "do": "shot", "name": "probe" }
+  ]
+}

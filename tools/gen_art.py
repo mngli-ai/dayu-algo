@@ -234,15 +234,35 @@ def gen_font():
  if missing>10: raise RuntimeError('缺字超过 10 个')
 
 # ---------------- 关卡背景条：160x80 可水平平铺，上半远景 / 下半近景 ----------------
-# 只用 PALETTE 16 色 + 全透明；贴左右边缘的横带必须同色，横向接缝才不断层。
+# r17 美术方向（玩家反馈：背景太清晰、和模块混色）：
+#  1) 剪影只用板内最沉的冷色：远景 Grape(#B99AD9 远雾紫)、近景 Ink(#38515B 墨)+Grape 点缀、深海渐变带 WhaleDeep→Ink。
+#     MintLight/Foam/Paper/White/Sand/Salt/Yellow/Honey 这类「模块卡片色」一律不出现在背景条里，明度与色相都拉开。
+#  2) 不再画 1px Ink 描边（描边感会和卡片轮廓打架）；剪影顶边与侧边用 1px 隔列抖动（dither）柔化成阶梯边缘。
+#     抖动按「全局列奇偶」落点，160 是偶数、行带整行同色，横向平铺接缝仍然严丝合缝。
+#  3) alpha 仍只允许 0/255；整体压暗/降饱和由 Backdrop.cs 运行时的暗色 tint x 0.25~0.40 透明度完成。
 PROPS=ROOT/'Assets/Art/Props'; RPROPS=ROOT/'Assets/Resources/Props'
 BGW,BGH=160,80
-BGPAPER,BGSAND,BGWHITE,BGFOAM,BGMINTL=0,1,2,3,4
-BOWL,BOW,BOD,BINK=5,6,7,8
-BGHONEY,BGAMBER,BGLAV,BGGRAPE,BGYELLOW,BGCORAL,BGMINT=9,10,11,12,13,14,15
+BINK,BGGRAPE,BOD=8,12,7    # 背景条三档：Ink 近景主体 / Grape 远景主体 / WhaleDeep 只进 bg_deep 渐变带
 
 def _bg():
  im=Image.new('RGBA',(BGW,BGH),(0,0,0,0)); return im,ImageDraw.Draw(im)
+
+def _drow(d,y,x0,x1,c,p=0):
+ # 全局列奇偶的 1px 抖动行：跨瓦片接缝处奇偶不断档（160 为偶数）。
+ # 两端各让开 1 列（x 只走 1..158），首列/末列的透明度逐行一致，r16 的接缝校验规则继续成立。
+ for x in range(max(1,x0),min(BGW-2,x1)+1):
+  if (x+p)%2==0: d.point((x,y),fill=P[c])
+
+def _dcol(d,x,y0,y1,c):
+ # 抖动列（按行奇偶）：竖向软边
+ if x<0 or x>=BGW: return
+ for y in range(max(0,y0),min(BGH-1,y1)+1):
+  if y%2==0: d.point((x,y),fill=P[c])
+
+def _soft(d,x0,y0,x1,y1,c):
+ # 实心块 + 顶边/两侧 1px 抖动羽化，去掉「清晰剪影描边感」
+ d.rectangle((x0,y0,x1,y1),fill=P[c])
+ _drow(d,y0-1,x0,x1,c); _dcol(d,x0-1,y0,y1,c); _dcol(d,x1+1,y0,y1,c)
 
 def _bg_save(name,im):
  PROPS.mkdir(parents=True,exist_ok=True); RPROPS.mkdir(parents=True,exist_ok=True)
@@ -251,91 +271,110 @@ def _bg_save(name,im):
 
 def bg_dock():
  im,d=_bg()
- for x,y,w in ((10,8,14),(52,13,18),(128,6,12)): d.rectangle((x,y,x+w,y+1),fill=P[BGMINTL])
- d.rectangle((0,34,BGW-1,35),fill=P[BGMINTL]); d.rectangle((0,36,BGW-1,36),fill=P[BOW])
+ # —— 远景上半：远雾紫（Grape）低云带 + 墨色（Ink）吊臂 ——
+ for x,y,w in ((10,8,14),(52,13,18),(128,6,12)):
+  d.rectangle((x,y,x+w,y+1),fill=P[BGGRAPE]); _drow(d,y-1,x,x+w,BGGRAPE)
+ d.rectangle((0,34,BGW-1,35),fill=P[BGGRAPE]); _drow(d,33,0,BGW-1,BGGRAPE)
+ d.rectangle((0,36,BGW-1,36),fill=P[BINK])
  def crane(x):
-  d.rectangle((x,10,x+2,33),fill=P[BOD])
-  d.rectangle((x-12,10,x+16,11),fill=P[BOW])
-  d.rectangle((x-14,9,x-12,13),fill=P[BOD])
-  d.rectangle((x-2,14,x+1,17),fill=P[BOW])
-  d.rectangle((x+13,12,x+13,19),fill=P[BINK]); d.rectangle((x+12,19,x+14,20),fill=P[BOD])
+  _soft(d,x,10,x+2,33,BINK)
+  d.rectangle((x-12,10,x+16,11),fill=P[BGGRAPE]); _drow(d,9,x-12,x+16,BGGRAPE)
+  _soft(d,x-14,9,x-12,13,BGGRAPE)
+  d.rectangle((x-2,14,x+1,17),fill=P[BGGRAPE])
+  d.rectangle((x+13,12,x+13,19),fill=P[BGGRAPE]); _soft(d,x+12,19,x+14,20,BINK)
  crane(30); crane(104)
- d.rectangle((138,29,BGW-10,32),fill=P[BOD]); d.rectangle((141,25,BGW-14,28),fill=P[BOW])
+ _soft(d,138,29,BGW-10,32,BINK); _soft(d,141,25,BGW-14,28,BGGRAPE)
+ # —— 近景下半：墨色主体 + 紫波纹/紫缝 ——
  for y,xs in ((44,(12,60,108)),(48,(30,84,128)),(52,(4,52,96,140))):
-  for x in xs: d.rectangle((x,y,x+8,y),fill=P[BOWL])
+  for x in xs: d.rectangle((x,y,x+8,y),fill=P[BGGRAPE])
  def quay(x0,x1):
-  d.rectangle((x0,56,x1,57),fill=P[BOD]); d.rectangle((x0,58,x1,69),fill=P[BOW])
-  for x in range(x0+4,x1,10): d.rectangle((x,58,x,69),fill=P[BGFOAM])
-  for x in (x0+6,x0+30,(x0+x1)//2+8,x1-8): d.rectangle((x,70,x+2,79),fill=P[BOD])
+  _drow(d,55,x0,x1,BGGRAPE)
+  d.rectangle((x0,56,x1,69),fill=P[BINK])
+  for x in range(x0+4,x1,10): d.rectangle((x,58,x,69),fill=P[BGGRAPE])
+  for x in (x0+6,x0+30,(x0+x1)//2+8,x1-8): d.rectangle((x,70,x+2,79),fill=P[BINK])
  quay(8,52); quay(100,150)
- def crate(x,y,s,c):
-  d.rectangle((x,y,x+s,y+s),fill=P[c]); d.rectangle((x,y,x+s,y),fill=P[BINK])
-  d.point((x+1,y+2),fill=P[BGFOAM]); d.point((x+s-1,y+s-1),fill=P[BGAMBER])
- crate(16,49,7,BGSAND); crate(30,51,5,BGPAPER); crate(112,48,7,BGSAND); crate(126,51,5,BGMINTL)
- d.rectangle((40,52,43,55),fill=P[BOD]); d.rectangle((136,52,139,55),fill=P[BOD])
+ def crate(x,y,s):
+  _soft(d,x,y,x+s-1,y+s-1,BINK)
+  _drow(d,y+2,x+1,x+s-2,BGGRAPE)
+ crate(16,49,7); crate(30,51,5); crate(112,48,7); crate(126,51,5)
+ _soft(d,40,52,43,55,BGGRAPE); _soft(d,136,52,139,55,BGGRAPE)
  _bg_save('bg_dock',im)
 
 def bg_factory():
  im,d=_bg()
- for x,y,w in ((16,6,16),(120,10,12)): d.rectangle((x,y,x+w,y+1),fill=P[BGMINTL])
+ # —— 远景上半：Grape 屋脊锯齿（顶点行抖动）+ Ink 水塔/烟囱 ——
+ for x,y,w in ((16,6,16),(120,10,12)):
+  d.rectangle((x,y,x+w,y+1),fill=P[BGGRAPE]); _drow(d,y-1,x,x+w,BGGRAPE)
  def tooth(x):
   for c in range(24):
    t=30-c//4
-   d.rectangle((x+c,t,x+c,33),fill=P[BOWL])
-   if c%4==0: d.rectangle((x+c,t,x+c,t+1),fill=P[BOD])
+   d.rectangle((x+c,t,x+c,33),fill=P[BGGRAPE])
+   if c%4==0: _drow(d,t-1,x+c,x+c,BGGRAPE)
  for k in range(6): tooth(8+k*24)
- d.rectangle((66,16,78,25),fill=P[BOWL]); d.rectangle((67,14,77,15),fill=P[BOD])
- for x in (69,75): d.rectangle((x,25,x,33),fill=P[BOD])
- d.rectangle((140,8,143,29),fill=P[BOD]); d.rectangle((139,8,144,9),fill=P[BOW])
- for x,y in ((141,5),(143,2),(140,0)): d.rectangle((x,y,x+2,y+1),fill=P[BGFOAM])
- d.rectangle((6,48,58,49),fill=P[BOD]); d.rectangle((8,50,56,64),fill=P[BGPAPER])
- d.rectangle((20,55,27,64),fill=P[BOD]); d.rectangle((36,52,44,57),fill=P[BGMINTL])
- d.rectangle((92,44,152,45),fill=P[BOD]); d.rectangle((94,46,150,64),fill=P[BGSAND])
- for x in range(100,146,12): d.rectangle((x,50,x+5,55),fill=P[BOD])
- for x in range(100,146,12): d.rectangle((x,58,x+5,63),fill=P[BOW])
- d.rectangle((0,68,BGW-1,69),fill=P[BINK])
- for x in range(8,BGW,16): d.rectangle((x,70,x+1,71),fill=P[BGHONEY])
- for x in (40,96): d.rectangle((x,63,x+5,67),fill=P[BGSAND]); d.rectangle((x,63,x+5,63),fill=P[BINK])
- d.rectangle((0,75,BGW-1,75),fill=P[BOWL]); d.rectangle((0,76,BGW-1,79),fill=P[BOD])
+ _soft(d,66,16,78,25,BINK); d.rectangle((66,18,78,18),fill=P[BGGRAPE])
+ _soft(d,67,14,77,15,BGGRAPE)
+ for x in (69,75): d.rectangle((x,25,x,33),fill=P[BINK])
+ _soft(d,140,8,143,29,BINK); d.rectangle((139,12,144,12),fill=P[BGGRAPE])
+ for x,y in ((141,5),(143,2),(140,0)):
+  d.rectangle((x,y,x+2,y+1),fill=P[BGGRAPE]); _drow(d,y-1,x,x+2,BGGRAPE)
+ # —— 近景下半：Ink 机器体 + Grape 窗/传送带纹 ——
+ d.rectangle((6,48,58,49),fill=P[BGGRAPE]); _drow(d,47,6,58,BGGRAPE)
+ d.rectangle((8,50,56,64),fill=P[BINK])
+ _soft(d,20,55,27,64,BGGRAPE); _soft(d,36,52,44,57,BGGRAPE)
+ d.rectangle((92,44,152,45),fill=P[BGGRAPE]); _drow(d,43,92,152,BGGRAPE)
+ d.rectangle((94,46,150,64),fill=P[BINK])
+ for x in range(100,146,12): d.rectangle((x,50,x+5,55),fill=P[BGGRAPE])
+ for x in range(100,146,12): d.rectangle((x,58,x+5,63),fill=P[BINK])
+ _drow(d,68,0,BGW-1,BGGRAPE)
+ _drow(d,70,0,BGW-1,BINK,1)
+ for x in (40,96): _soft(d,x,63,x+5,67,BGGRAPE)
+ d.rectangle((0,76,BGW-1,79),fill=P[BINK]); _drow(d,75,0,BGW-1,BINK)
  _bg_save('bg_factory',im)
 
 def bg_shelf():
  im,d=_bg()
- for y in (17,26): d.rectangle((0,y,BGW-1,y+1),fill=P[BOWL])
- d.rectangle((0,34,BGW-1,34),fill=P[BOD])
- for x in range(16,BGW-8,24): d.rectangle((x,12,x+1,33),fill=P[BOD])
- for x,y,c in ((20,20,BGMINTL),(68,21,BGSAND),(116,14,BGMINTL),(44,29,BGSAND),(92,29,BGPAPER)):
-  d.rectangle((x,y,x+5,y+3),fill=P[c])
+ # —— 远景上半：Grape 横搁板 + Ink 立柱 ——
+ for y in (17,26): d.rectangle((0,y,BGW-1,y+1),fill=P[BGGRAPE]); _drow(d,y-1,0,BGW-1,BGGRAPE)
+ d.rectangle((0,34,BGW-1,34),fill=P[BINK])
+ for x in range(16,BGW-8,24): _dcol(d,x,12,33,BINK)
+ for x,y in ((20,20),(68,21),(116,14),(44,29),(92,29)):
+  d.rectangle((x,y,x+5,y+3),fill=P[BGGRAPE]); _drow(d,y-1,x,x+5,BGGRAPE)
+ # —— 近景下半：Ink 货架与纸箱，箱顶 1px 紫抖动代替原 Ink 描边 ——
  def rack(x0,x1):
-  d.rectangle((x0,42,x0+3,79),fill=P[BOD]); d.rectangle((x1-3,42,x1,79),fill=P[BOD])
-  for y in (46,58,70): d.rectangle((x0,y,x1,y+2),fill=P[BOD])
+  _soft(d,x0,42,x0+3,79,BINK); _soft(d,x1-3,42,x1,79,BINK)
+  for y in (46,58,70): d.rectangle((x0,y,x1,y+2),fill=P[BINK])
  rack(10,64); rack(96,150)
- def box(x,y,w,h,c): d.rectangle((x,y,x+w-1,y+h-1),fill=P[c]); d.rectangle((x,y,x+w-1,y),fill=P[BINK])
- box(18,52,9,6,BGSAND); box(34,53,7,5,BGYELLOW); box(46,51,9,7,BGMINTL)
- box(104,51,9,7,BGSAND); box(120,53,8,5,BGAMBER); box(134,52,8,6,BGPAPER)
- box(22,64,8,6,BGYELLOW); box(38,63,10,7,BGSAND); box(50,65,6,5,BGMINTL)
- box(106,63,9,7,BGMINTL); box(122,64,8,6,BGSAND); box(136,65,7,5,BGWHITE)
- box(70,70,8,7,BGSAND); box(82,71,7,6,BGHONEY)
- d.rectangle((0,78,BGW-1,79),fill=P[BOD])
+ def box(x,y,w,h):
+  _soft(d,x,y,x+w-1,y+h-1,BINK)
+  _drow(d,y+h+1,x,x+w-1,BGGRAPE)
+ box(18,52,9,6); box(46,51,9,7)
+ box(104,51,9,7); box(134,52,8,6)
+ box(22,64,8,6); box(38,63,10,7); box(50,65,6,5)
+ box(106,63,9,7); box(122,64,8,6); box(136,65,7,5)
+ box(70,70,8,7); box(82,71,7,6)
+ for x,y,w,h in ((34,53,7,5),(120,53,8,5)):
+  _soft(d,x,y,x+w-1,y+h-1,BGGRAPE)
+ d.rectangle((0,78,BGW-1,79),fill=P[BINK]); _drow(d,77,0,BGW-1,BINK)
  _bg_save('bg_shelf',im)
 
 def bg_deep():
  im,d=_bg()
- # 渐层带用「整行交替」而不是棋盘格：同一行左右两端同色，横向平铺接缝才严丝合缝
- for y in range(10,17): d.rectangle((0,y,BGW-1,y),fill=P[BGMINTL])
- for y in range(17,23): d.rectangle((0,y,BGW-1,y),fill=P[BGMINTL] if y%2==0 else P[BGFOAM])
- for y in range(23,31): d.rectangle((0,y,BGW-1,y),fill=P[BOWL])
- for y in range(31,40): d.rectangle((0,y,BGW-1,y),fill=P[BOWL] if y%2==0 else P[BOW])
- for y in range(40,48): d.rectangle((0,y,BGW-1,y),fill=P[BOW])
- for y in range(48,54): d.rectangle((0,y,BGW-1,y),fill=P[BOW] if y%2==0 else P[BOD])
- for y in range(54,72): d.rectangle((0,y,BGW-1,y),fill=P[BOD])
- for y in range(72,78): d.rectangle((0,y,BGW-1,y),fill=P[BOD] if y%2==0 else P[BINK])
- for y in range(78,80): d.rectangle((0,y,BGW-1,y),fill=P[BOD])
- for x,y in ((22,12),(64,20),(102,30),(146,44),(30,50),(88,42),(140,14)): d.point((x,y),fill=P[BGWHITE])
+ # 深海渐变带（r17 压暗版）：上「远雾紫 Grape」经「鲸青深 WhaleDeep」过渡到「墨 Ink」；
+ # 渐层仍用「整行交替」而不是棋盘格：同一行左右两端同色，横向平铺接缝才严丝合缝
+ for y in range(10,17): d.rectangle((0,y,BGW-1,y),fill=P[BGGRAPE])
+ for y in range(17,23): d.rectangle((0,y,BGW-1,y),fill=P[BGGRAPE] if y%2==0 else P[BOD])
+ for y in range(23,31): d.rectangle((0,y,BGW-1,y),fill=P[BOD])
+ for y in range(31,40): d.rectangle((0,y,BGW-1,y),fill=P[BOD] if y%2==0 else P[BINK])
+ for y in range(40,48): d.rectangle((0,y,BGW-1,y),fill=P[BINK])
+ for y in range(48,54): d.rectangle((0,y,BGW-1,y),fill=P[BINK] if y%2==0 else P[BOD])
+ for y in range(54,72): d.rectangle((0,y,BGW-1,y),fill=P[BINK])
+ for y in range(72,78): d.rectangle((0,y,BGW-1,y),fill=P[BINK] if y%2==0 else P[BOD])
+ for y in range(78,80): d.rectangle((0,y,BGW-1,y),fill=P[BINK])
+ for x,y in ((22,12),(64,20),(102,30),(146,44),(30,50),(88,42),(140,14)): d.point((x,y),fill=P[BGGRAPE])
  def kelp(x,y0):
-  for i,y in enumerate(range(y0,77)): d.rectangle((x+(i%2),y,x+(i%2),y),fill=P[BINK])
+  for i,y in enumerate(range(y0,77)): d.rectangle((x+(i%2),y,x+(i%2),y),fill=P[BOD])
  kelp(48,60); kelp(120,58)
- for x,y in ((66,64),(118,68),(30,66)): d.point((x,y),fill=P[BGYELLOW])
+ for x,y in ((66,64),(118,68),(30,66)): d.point((x,y),fill=P[BGGRAPE])
  _bg_save('bg_deep',im)
 
 def gen_backdrops():

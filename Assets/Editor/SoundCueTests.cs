@@ -17,7 +17,9 @@ namespace Dayu.EditorTools
         const long TotalBudgetBytes = 700_000L;          // 与 gen_sfx.py 的 TOTAL_BUDGET 同一档
         const double DcTolerance = 0.01;                 // 均值绝对值上限，超过就是能听出来的偏置
         const double PeakTolerance = 0.005;              // 16bit 量化误差的容身之处
-        const int ExpectedCueCount = 17;
+        // 17 条是第十六轮的名单；第十七轮加判题特效的两条发声（confetti 给 AC、wa 给 WA），变 19。
+        // 这个数字故意写死而不是取 Cues.Count：凭空多出一条 cue 通常意味着有人加了音却忘了接线或忘了生成 wav。
+        const int ExpectedCueCount = 19;
 
         public static void Run(ref int total, ref int passed)
         {

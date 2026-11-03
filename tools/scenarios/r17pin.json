@@ -1,0 +1,30 @@
+{
+  "args": ["-level", "L1", "-solution", "-cardrect", "-screen-width", "1440", "-screen-height", "900", "-screen-fullscreen", "0"],
+  "steps": [
+    { "do": "waitlog", "marker": "[level] L1", "timeout": 90 },
+    { "do": "wait", "sec": 2.5 },
+    { "do": "shot", "name": "full_window" },
+
+    { "do": "key", "name": "f9" },
+    { "do": "waitlog", "marker": "[rectdump] #1", "timeout": 20 },
+    { "do": "wait", "sec": 0.6 },
+
+    { "do": "clickrect", "label": "sample_input", "button": "right", "after": 0.8 },
+    { "do": "waitlog", "marker": "[toast] 「样例输入板」", "timeout": 20 },
+    { "do": "shot", "name": "pinned_refused" },
+    { "do": "waitlog", "marker": "[sfx] 发声 error", "timeout": 20 },
+
+    { "do": "clickrect", "label": "sample_compare", "button": "right", "after": 0.8 },
+    { "do": "waitlog", "marker": "[toast] 「样例输入板」", "timeout": 20 },
+
+    { "do": "clickrect", "label": "vardecl", "button": "right", "after": 0.8 },
+    { "do": "waitlog", "marker": "[toast] 已删除模块：", "timeout": 20 },
+    { "do": "shot", "name": "normal_deleted" },
+    { "do": "waitlog", "marker": "[sfx] 发声 del", "timeout": 20 },
+
+    { "do": "key", "name": "f9" },
+    { "do": "waitlog", "marker": "[rectdump] #2", "timeout": 20 },
+    { "do": "wait", "sec": 0.6 },
+    { "do": "shot", "name": "boards_still_there" }
+  ]
+}

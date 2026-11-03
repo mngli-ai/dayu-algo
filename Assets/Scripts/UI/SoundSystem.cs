@@ -26,10 +26,13 @@ public sealed class SoundSystem : MonoBehaviour
     public const float PeakCeiling = 0.8f;      // 与 gen_sfx.py 的 CEILING 同口径
     public const int MaxVoices = 6;             // 同时最多 6 路，超了就抢最老的那一路
 
+    // confetti/wa 是第十七轮加的「判题结论」音：只跟彩带/红十字的画面走，和 ac/fail 各管一层。
+    // 名单是追加在尾部的，既有 17 条的名字与顺序一个都没动（自测在断言它们）。
     static readonly string[] CueNames =
     {
         "place", "link", "unlink", "del", "undo", "redo", "click", "toggle",
-        "run", "step", "pass", "ac", "fail", "error", "levelin", "clear", "save"
+        "run", "step", "pass", "ac", "fail", "error", "levelin", "clear", "save",
+        "confetti", "wa"
     };
 
     // 每个 cue 的最小间隔（秒），与 gen_sfx.py 里 CUES[name]["gap"] 一一对应：
@@ -41,6 +44,8 @@ public sealed class SoundSystem : MonoBehaviour
         { "run", 0.25f }, { "step", 0.07f }, { "pass", 0.08f }, { "ac", 0.50f },
         { "fail", 0.30f }, { "error", 0.30f }, { "levelin", 0.40f }, { "clear", 0.80f },
         { "save", 0.45f },
+        // 判题结论层新增：confetti 跟在 ac 之后半秒内会被去抖吞掉也没关系，彩带音是「补色」不是主音
+        { "confetti", 0.35f }, { "wa", 0.30f },
     };
 
     // VM 事件名 → cue：单步/自动播放逐事件时一行接进去。
@@ -133,6 +138,9 @@ public sealed class SoundSystem : MonoBehaviour
         v.volume = Volume;
         v.Stop();           // 复用的那一路可能还压着上一句的尾巴，先停干净再播
         v.Play();
+        // 每发声一次落一行：真实鼠标验收要拿这行确认「AC 那一声真的排进了音频设备」，
+        // 而不是只看 App 调没调 Play。被去抖挡掉的不落行，所以这行出现就等于玩家听见了。
+        Debug.Log("[sfx] 发声 " + cue);
     }
 
     /// <summary>去抖判定，纯函数，自测直接按真值表打。</summary>

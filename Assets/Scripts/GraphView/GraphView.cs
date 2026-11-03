@@ -57,6 +57,9 @@ public sealed class GraphView : MonoBehaviour, IPointerDownHandler, IPointerUpHa
     public const float TextH = 14f;
     // 样例板自己带数字块，摘要照旧留在左下角；其它模块的功能说明改到标题下面居中。
     public static bool BottomSummary(string type) { return type == "sample_input" || type == "sample_compare"; }
+    // 两块样例板钉死在画板上：判题链靠它们取当前样例、对比程序输出，玩家删掉这一关就没法判了。
+    // 所以右键删、Delete、框选批量删、复制粘贴都跳过它们；关卡加载时还会自动补齐缺的那块。
+    public static bool IsPinned(string type) { return BottomSummary(type); }
     static bool HasIdentityLine(string type) { return type != "entry" && !string.IsNullOrEmpty(type) && !BottomSummary(type); }
     // 表达式字段的第一行起点：有身份行时排在它下面，没有就紧贴标题。
     public static float ExprTop(string type) { return HasIdentityLine(type) ? TitleH + IdentityH + 2f : PortRowTop; }
@@ -329,6 +332,8 @@ public sealed class GraphView : MonoBehaviour, IPointerDownHandler, IPointerUpHa
     public void DeleteNode(string uid)
     {
         if (string.IsNullOrEmpty(uid)) return;
+        var pinned = GraphUtil.FindNode(graph, uid);
+        if (pinned != null && IsPinned(pinned.Type)) return;   // 常驻板删不掉，要不要提示由调用方决定
         NodeCard c;
         if (cards.TryGetValue(uid, out c) && c != null) Destroy(c.gameObject);
         cards.Remove(uid);
@@ -1343,7 +1348,9 @@ public sealed class GraphView : MonoBehaviour, IPointerDownHandler, IPointerUpHa
         foreach (var uid in picked)
         {
             var n = GraphUtil.FindNode(graph, uid);
-            if (n != null) clipboard.Add(CloneNode(n));
+            if (n == null) continue;
+            if (IsPinned(n.Type)) { if (App.I != null) App.I.Toast(PinnedHint); continue; }   // 抄走再贴就多出第二块样板，判题会认错板
+            clipboard.Add(CloneNode(n));
         }
         foreach (var l in graph.Links)
             if (picked.Contains(l.FromNode) && picked.Contains(l.ToNode)) clipboardLinks.Add(CloneLink(l));
@@ -1652,12 +1659,13 @@ public sealed class GraphView : MonoBehaviour, IPointerDownHandler, IPointerUpHa
     }
     public void DeleteSelected()
     {
-        bool any = false;
+        bool any = false, blocked = false;
         for (int i = graph.Nodes.Count - 1; i >= 0; i--)
         {
             var n = graph.Nodes[i];
             NodeCard c;
             if (n == null || !cards.TryGetValue(n.Uid, out c) || c == null || !c.Selected) continue;
+            if (IsPinned(n.Type)) { blocked = true; continue; }   // 框选里混进样例板：其余照删，那两块留下
             var id = n.Uid;
             Destroy(c.gameObject);
             cards.Remove(id);
@@ -1668,8 +1676,10 @@ public sealed class GraphView : MonoBehaviour, IPointerDownHandler, IPointerUpHa
         RefreshLines();
         RefreshScopeFields();
         RaiseGraphChanged();
+        if (blocked && App.I != null) App.I.Toast(PinnedHint);
         if (any) SoundSystem.Play("del");   // 批量删只给一声，这条 cue 的 0.07s 去抖会把连点删几块压成一下
     }
+    public const string PinnedHint = "「样例输入板」「样例对比板」常驻画板，不能删除";
     void Update()
     {
         StepViewFollow();

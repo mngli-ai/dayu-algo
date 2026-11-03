@@ -49,4 +49,5 @@ __pycache__/
 *.pyc
 
 # ---- 发布用的本地压缩包 ----
+/dayu-windows-x64.zip
 /dayu-windows-x64-*.zip

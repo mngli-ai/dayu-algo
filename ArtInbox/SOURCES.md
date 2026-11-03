@@ -138,3 +138,19 @@
 - 游戏内署名见 `App.cs` 的 `BuildFooter()`；旧自绘搬运鲸鱼 `whale_carry_box_32x32_6f.png` 已从 `PropAssets` 摘掉加载（文件仍在 `Assets/Art/Props`、`Assets/Resources/Props`，未被任何代码引用）。
 - `ArtInbox/whale-maid/` 是 FAYER 分层包的重复下载残留（仅 1 个文件、被占用未能删除），与条目 7 同源，可手工删除。
 
+---
+
+## 八、程序自绘原创形象（2026-11-03 追加，非第三方素材）
+
+> 本节只追加，不改动上方 §一~§七 的任何既有条目与结论。
+
+### 15. `Assets/Art/Personas/**` + `Assets/Resources/Personas/**`（7 位 AI 拟人的像素立绘/头像，共 29 张 PNG）★自绘原创
+- 来源：**本仓库自产**。由 `tools/gen_personas.py`（Python 3 + Pillow，确定性整数格绘制，固定色板）逐像素生成，脚本即源文件，可重复运行 `C:/ProgramData/anaconda3/python tools/gen_personas.py` 完整复现同一批图。
+- 许可：**程序自绘原创，无第三方素材依赖，不含任何网络下载件、不临摹任何官方或社区成图** → 这部分美术随项目非商业发布时**无需额外署名链，也不受 CC BY-NC-SA 约束**。若日后本项目要商用，本节条目本身可用（仍属原创），但见下方「整体限制」。
+- 排查依据（为什么走自绘而不是找现成像素素材）：检索过 OpenAI / Google / DeepSeek 等各家品牌资产页与 itch.io / Kenney 等 CC0 像素包 —— **没有任何一家发布过可商用的官方拟人像素素材**；CC0 包里只有通用像素件、不含 AI 角色；社区的「AI 娘」图全部是二创（CC BY-NC-SA 或授权不明），萌娘百科的说明文字本身也是 BY-NC-SA。故只能自绘原创演绎。
+- 规避措施：角色设定参考 `Evidence/r16/llm-persona-research.md` 的**文字**性格与口癖（自绘仅取材于公开文字描述，不参照任何成图构图）。尤其主动避开 §一/§六 的女仆鲸鱼娘签名式组合——本节的「大肥鱼」用的是**深蓝短发 + 大白围裙 + 饭碗 + 鲸尾**，**没有**女仆头饰、头鳍耳、蝴蝶结、蓝渐变长发、深蓝白女仆裙、玛丽珍鞋，不与条目 1/6/8 的构图同构。
+- 落盘与一致性：同名同字节双份存放（`Assets/Art/Personas/` 为源件，`Assets/Resources/Personas/` 为 Unity 运行时读取），清单 `Assets/Art/Personas/personas_meta.json`；逐字节一致由 `Evidence/r17/persona_selfcheck.py`（sha256）校验。
+- 规格：立绘帧 64×80、头像 32×32，七角色严格同尺寸；统一使用项目 16 色板（同 `Assets/Scripts/UI/Theme.cs` / `tools/gen_art.py` 的 PALETTE），1px 描边 `#38515B`，alpha 仅 0/255，无抗锯齿，**画面内不含任何文字**（中文由位图字体渲染）。
+- 运行时入口：`Assets/Scripts/UI/Personas.cs`（`Personas.Face/Frame/ActionsFor/Has/KeyForDisplayName/Keys`），加载失败只 `Debug.LogWarning` 一次并返回 null，不抛异常。
+- **整体限制（重要，指回既有条目）**：本节条目自身是原创、可自由使用；但**本仓库整体**仍含 §一~§七 的第三方 CC BY-NC-SA 素材（`Assets/Resources/Hero/` 的四件衍生件即来自条目 1/6/8），所以项目整体口径不变——**在任何商业化前，仍须按 §六.4 与 §头部「2026-11-03 补充（商用口径）」换掉鲸鱼娘形象或取得书面授权**；页脚署名（`App.cs` 的 `BuildFooter()`）与「各 AI 形象均为同人虚构」免责声明继续保留。自绘形象与第三方形象同框时，页脚署名义务以第三方条目为准。
+

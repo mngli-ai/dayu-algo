@@ -1,0 +1,21 @@
+{
+  "args": ["-level", "L1", "-solution", "-watest", "-screen-width", "1440", "-screen-height", "900", "-screen-fullscreen", "0"],
+  "steps": [
+    { "do": "waitlog", "marker": "[level] L1", "timeout": 90 },
+    { "do": "waitlog", "marker": "[wa] 已把输出表达式改成恒错的 0，提交", "timeout": 90 },
+    { "do": "wait", "sec": 1.5 },
+    { "do": "shot", "name": "wa_running" },
+
+    { "do": "waitlog", "marker": "[fx] Wa 喷", "timeout": 90 },
+    { "do": "shot", "name": "wa_cross_0" },
+    { "do": "wait", "sec": 0.1 },
+    { "do": "shot", "name": "wa_cross_1" },
+    { "do": "wait", "sec": 0.12 },
+    { "do": "shot", "name": "wa_cross_2" },
+    { "do": "waitlog", "marker": "[sfx] 发声 wa", "timeout": 30 },
+
+    { "do": "waitlog", "marker": "[submit] L1 pass=", "timeout": 90 },
+    { "do": "wait", "sec": 0.6 },
+    { "do": "shot", "name": "wa_verdict" }
+  ]
+}

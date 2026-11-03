@@ -1,0 +1,55 @@
+{
+  "args": ["-menu", "-menurect", "-screen-width", "1440", "-screen-height", "900", "-screen-fullscreen", "0"],
+  "steps": [
+    { "do": "waitlog", "marker": "[menu] 主菜单打开", "timeout": 90 },
+    { "do": "wait", "sec": 3.2 },
+    { "do": "shot", "name": "menu" },
+
+    { "do": "clickrect", "label": "菜单按钮 说明书", "after": 1.0 },
+    { "do": "waitlog", "marker": "[manual] 条目", "timeout": 20 },
+    { "do": "wait", "sec": 0.8 },
+    { "do": "shot", "name": "manual_top" },
+    { "do": "wheel", "at": [0.5, 0.5], "notches": 12, "amount": -1 },
+    { "do": "wait", "sec": 0.7 },
+    { "do": "shot", "name": "manual_scroll" },
+    { "do": "clickrect", "label": "菜单按钮 关闭", "after": 1.2 },
+    { "do": "waitlog", "marker": "[menu] 主菜单打开", "timeout": 20 },
+
+    { "do": "clickrect", "label": "菜单按钮 重置进度", "after": 1.0 },
+    { "do": "wait", "sec": 0.9 },
+    { "do": "shot", "name": "reset_confirm" },
+    { "do": "clickrect", "label": "菜单按钮 取消", "after": 1.2 },
+    { "do": "waitlog", "marker": "[menu] 主菜单打开", "timeout": 20 },
+
+    { "do": "clickrect", "label": "菜单按钮 选择关卡", "after": 1.0 },
+    { "do": "waitlog", "marker": "[menu] 关卡选择打开", "timeout": 20 },
+    { "do": "shot", "name": "level_select" },
+
+    { "do": "clickrect", "label": "进入按钮 L2", "after": 2.5 },
+    { "do": "waitlog", "marker": "[level] L2", "timeout": 90 },
+    { "do": "wait", "sec": 1.5 },
+    { "do": "shot", "name": "level_L2" },
+
+    { "do": "clickrect", "label": "顶栏按钮 菜单", "after": 1.2 },
+    { "do": "waitlog", "marker": "[menu] 主菜单打开", "timeout": 20 },
+    { "do": "clickrect", "label": "菜单按钮 选择关卡", "after": 1.0 },
+    { "do": "waitlog", "marker": "[menu] 关卡选择打开", "timeout": 20 },
+    { "do": "clickrect", "label": "进入按钮 P3", "after": 2.5 },
+    { "do": "waitlog", "marker": "[level] P3", "timeout": 90 },
+    { "do": "wait", "sec": 1.5 },
+    { "do": "shot", "name": "level_P3" },
+
+    { "do": "clickrect", "label": "顶栏按钮 菜单", "after": 1.2 },
+    { "do": "waitlog", "marker": "[menu] 主菜单打开", "timeout": 20 },
+    { "do": "clickrect", "label": "菜单按钮 开始游戏", "after": 2.5 },
+    { "do": "waitlog", "marker": "[toast] 进入 ", "timeout": 60 },
+    { "do": "wait", "sec": 1.2 },
+    { "do": "shot", "name": "start_game" },
+
+    { "do": "clickrect", "label": "顶栏按钮 菜单", "after": 1.2 },
+    { "do": "waitlog", "marker": "[menu] 主菜单打开", "timeout": 20 },
+    { "do": "clickrect", "label": "菜单按钮 关闭", "after": 1.0 },
+    { "do": "waitlog", "marker": "[menu] 菜单关闭", "timeout": 20 },
+    { "do": "shot", "name": "canvas_after_close" }
+  ]
+}

@@ -377,17 +377,17 @@ def run_steps(drv, win, steps, shots_dir, tag):
         elif kind == "click":
             drv.move(*st["at"])
             time.sleep(0.05)
-            drv.down()
+            drv.down(st.get("button", "left"))
             time.sleep(0.05)
-            drv.up()
+            drv.up(st.get("button", "left"))
             time.sleep(float(st.get("after", 0.2)))
         elif kind == "double":
             drv.move(*st["at"])
             time.sleep(0.05)
             for _ in range(2):
-                drv.down()
+                drv.down(st.get("button", "left"))
                 time.sleep(0.04)
-                drv.up()
+                drv.up(st.get("button", "left"))
                 time.sleep(0.04)
             time.sleep(float(st.get("after", 0.3)))
         elif kind == "wheel":
@@ -415,13 +415,16 @@ def run_steps(drv, win, steps, shots_dir, tag):
             at = last_rect(st["label"])
             if at is None:
                 raise SystemExit(f"日志里找不到 [rect] {st['label']}，前面缺一次 F9 测量")
+            # dx/dy：卡片行量的是左上角，正好落在边角上（右键命中卡片、左键拖标题带都要往内挪几步）
+            at = [at[0] + float(st.get("dx", 0.0)), at[1] + float(st.get("dy", 0.0))]
             print(f"[clickrect] {st['label']} → ({at[0]:.4f}, {at[1]:.4f})")
             drv.move(*at)
             time.sleep(0.05)
+            btn = st.get("button", "left")
             for _ in range(2 if st.get("double") else 1):
-                drv.down()
+                drv.down(btn)
                 time.sleep(0.05)
-                drv.up()
+                drv.up(btn)
                 time.sleep(0.05)
             time.sleep(float(st.get("after", 0.3)))
         elif kind == "max":

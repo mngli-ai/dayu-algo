@@ -2,10 +2,13 @@
 
 零外部素材：全部由 numpy 用方波/三角波/白噪声 + A-D 包络拼出来，
 跟 tools/gen_art.py 画像素图是同一套口径（生成物入库、源件不入库）。
+每条 cue 同时落两份：Assets/Resources/Audio/（运行时 Resources.Load 读的那份）
+与 Assets/Art/Audio/（源副本留档），--check 会逐字节对拍这两份。
 
 用法：
-    python tools/gen_sfx.py           # 生成全部 cue
+    python tools/gen_sfx.py           # 生成全部 cue（两份一起落盘）
     python tools/gen_sfx.py --check   # 只校验不落盘（时长预算/峰值/DC/磁盘与名单一致）
+    python tools/gen_sfx.py --only confetti,wa   # 只重生成这几条
 """
 from __future__ import annotations
 import argparse, math, sys, wave
@@ -15,6 +18,9 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "Assets" / "Resources" / "Audio"
+# 源副本：Resources/ 是运行时读的那份，Art/Audio/ 是与 gen_art.py 同口径的「生成物入库」留档。
+# 两处必须逐字节一致，--check 会拿它们对拍，免得改了脚本只重生成了一半。
+SRC = ROOT / "Assets" / "Art" / "Audio"
 
 SR = 44100
 BITS = 16
@@ -279,6 +285,29 @@ def c_save() -> np.ndarray:
     return arp([NOTE["E6"], NOTE["G6"]], "tri", "click", 0.03, 0.004, gain=0.7)
 
 
+# ---- 第十七轮新增：判题结论层（VerdictFx）的两条。只加不改，既有 17 条一个字节都没动 ----
+
+def c_confetti() -> np.ndarray:
+    # 上扬彩带音：六级上行琶音一路挑到 G6，末尾撒一点高频「沙」＝彩带落下来。
+    # 它是给 ac 补色的，不是主音，所以音量比 ac 低一档、去抖也收得比 ac 松。
+    notes = [NOTE["C5"], NOTE["E5"], NOTE["G5"], NOTE["C6"], NOTE["E6"], NOTE["G6"]]
+    return mix([
+        (arp(notes, "square", "stacc", 0.048, 0.010, gain=0.8), 0.0),
+        (noise(0.12, "click", 0.06, 0.30, 53), 0.16),        # lp=0.06：几乎不抹平，留高频的「沙沙」
+        (sine(NOTE["G6"], 0.10, "pluck", glide=NOTE["G6"] * 1.03), 0.24),
+    ])
+
+
+def c_wa() -> np.ndarray:
+    # 判错双音：G4→D4 下行两记钝音 + 一记 150Hz 低频「咚」。
+    # 和 fail 的分工：fail 是滑音（「答案对不上」），wa 是两下盖章（「这一条错了」），听感不许混。
+    return mix([
+        (arp([NOTE["G4"], NOTE["D4"]], "square", "click", 0.055, 0.045, duty=0.25, gain=0.85), 0.0),
+        (tri(150, 0.09, "stacc", glide=110), 0.0),
+        (noise(0.03, "click", 0.4, 0.25, 59), 0.055),
+    ])
+
+
 # gap = 该 cue 的最小间隔（秒），和 SoundSystem.cs 里的 MinInterval 表是同一份口径
 CUES: dict[str, dict] = {
     "click":   dict(build=c_click, level=0.34, gap=0.05, label="通用按钮"),
@@ -298,6 +327,8 @@ CUES: dict[str, dict] = {
     "levelin": dict(build=c_levelin, level=0.52, gap=0.40, label="进关"),
     "clear":   dict(build=c_clear, level=0.68, gap=0.80, label="通关"),
     "save":    dict(build=c_save, level=0.24, gap=0.45, label="自动保存落盘"),
+    "confetti": dict(build=c_confetti, level=0.52, gap=0.35, label="AC 彩带（上扬）"),
+    "wa":      dict(build=c_wa, level=0.48, gap=0.30, label="WA 判错（下行双音）"),
 }
 
 
@@ -333,6 +364,13 @@ def verify(name: str, x: np.ndarray) -> list[str]:
     gap = CUES.get(name, {}).get("gap")
     if gap is not None and gap <= 0:
         bad.append(f"{name} 去抖间隔必须为正")
+    # 表里的设计峰值也要过一遍：手抖写成 0.9 的话，render 会直接把削波做进文件里
+    lvl = CUES.get(name, {}).get("level")
+    if lvl is not None and not (0.0 < lvl <= CEILING):
+        bad.append(f"{name} 设计峰值 {lvl} 不在 (0, {CEILING}] 里")
+    label = CUES.get(name, {}).get("label")
+    if lvl is not None and not label:
+        bad.append(f"{name} 缺 label，报表和契约里的用途栏会空")
     return bad
 
 
@@ -341,24 +379,43 @@ def report(name: str, x: np.ndarray, size: int | None) -> None:
     dur = len(x) / SR
     peak = float(np.max(np.abs(x)))
     tail = f"{size / 1024:6.1f}KB" if size is not None else "  (未落盘)"
-    print(f"  {name:<8}{cue['label']:<14}{dur:5.3f}s  峰值 {peak:.2f}  去抖 {cue['gap']:.2f}s  {tail}")
+    print(f"  {name:<9}{cue['label']:<14}{dur:5.3f}s  峰值 {peak:.2f}  去抖 {cue['gap']:.2f}s  {tail}")
+
+
+def write_pair(name: str, x: np.ndarray) -> int:
+    """运行时那份（Resources/Audio）与源副本（Art/Audio）一起落，两处字节必须一样。"""
+    OUT.mkdir(parents=True, exist_ok=True)
+    SRC.mkdir(parents=True, exist_ok=True)
+    a = OUT / f"{name}.wav"
+    b = SRC / f"{name}.wav"
+    write_wav(a, x)
+    write_wav(b, x)
+    if a.read_bytes() != b.read_bytes():
+        raise RuntimeError(f"{name} 两份副本对不上，检查 {OUT} / {SRC}")
+    return a.stat().st_size
+
+
+def stale_files() -> list[str]:
+    bad = []
+    for d in (OUT, SRC):
+        if not d.exists():
+            continue
+        for f in sorted(d.glob("*.wav")):
+            if f.stem not in CUES:
+                bad.append(f"磁盘上有名单之外的音频：{f.relative_to(ROOT)}")
+    return bad
 
 
 def do_generate() -> int:
-    OUT.mkdir(parents=True, exist_ok=True)
     problems: list[str] = []
     total = 0
-    print(f"生成 {len(CUES)} 条 cue → {OUT.relative_to(ROOT)}")
+    print(f"生成 {len(CUES)} 条 cue → {OUT.relative_to(ROOT)}（源副本 {SRC.relative_to(ROOT)}）")
     for name in CUES:
         x = build(name)
         problems += verify(name, x)
-        path = OUT / f"{name}.wav"
-        write_wav(path, x)
-        total += path.stat().st_size
-        report(name, x, path.stat().st_size)
-    for stale in sorted(OUT.glob("*.wav")):
-        if stale.stem not in CUES:
-            problems.append(f"磁盘上有名单之外的音频：{stale.name}")
+        total += write_pair(name, x)
+        report(name, x, (OUT / f"{name}.wav").stat().st_size)
+    problems += stale_files()
     if total > TOTAL_BUDGET:
         problems.append(f"总体积 {total} 字节超过预算 {TOTAL_BUDGET}")
     print(f"合计 {total / 1024:.1f}KB（预算 {TOTAL_BUDGET / 1024:.0f}KB）")
@@ -387,10 +444,13 @@ def do_check() -> int:
         problems += verify(name + "(磁盘)", disk)
         if abs(len(disk) - len(x)) > 64:
             problems.append(f"{name} 磁盘长度 {len(disk)} 和现算长度 {len(x)} 对不上，文件是旧的")
+        src = SRC / f"{name}.wav"
+        if not src.exists():
+            problems.append(f"{name} 的源副本不在 {SRC.relative_to(ROOT)}，两份不同步")
+        elif src.read_bytes() != path.read_bytes():
+            problems.append(f"{name} 的源副本与运行时那份字节不一致")
         report(name, disk, size)
-    for stale in sorted(OUT.glob("*.wav")):
-        if stale.stem not in CUES:
-            problems.append(f"磁盘上有名单之外的音频：{stale.name}")
+    problems += stale_files()
     if total > TOTAL_BUDGET:
         problems.append(f"总体积 {total} 字节超过预算 {TOTAL_BUDGET}")
     print(f"合计 {total / 1024:.1f}KB（预算 {TOTAL_BUDGET / 1024:.0f}KB）")
@@ -428,8 +488,8 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         OUT.mkdir(parents=True, exist_ok=True)
         for name in picked:
-            write_wav(OUT / f"{name}.wav", build(name))
-            print(f"  {name}.wav 已生成")
+            write_pair(name, build(name))
+            print(f"  {name}.wav 已生成（两份）")
         return 0
     return do_check() if args.check else do_generate()
 

@@ -1,0 +1,25 @@
+{
+  "args": ["-level", "P0", "-solution", "-cardrect", "-screen-width", "1440", "-screen-height", "900", "-screen-fullscreen", "0"],
+  "steps": [
+    { "do": "waitlog", "marker": "[level] P0", "timeout": 90 },
+    { "do": "wait", "sec": 2.5 },
+    { "do": "key", "name": "f9" },
+    { "do": "waitlog", "marker": "[rectdump] #1", "timeout": 20 },
+    { "do": "wait", "sec": 0.8 },
+    { "do": "shot", "name": "bg_before" },
+
+    { "do": "drag", "from": [0.20, 0.75], "to": [0.20, 0.35], "button": "middle", "steps": 20, "slice": 0.04, "after": 1.4 },
+    { "do": "shot", "name": "bg_after_drag" },
+
+    { "do": "key", "name": "f9" },
+    { "do": "waitlog", "marker": "[rectdump] #2", "timeout": 20 },
+    { "do": "wait", "sec": 0.8 },
+    { "do": "shot", "name": "bg_after" },
+
+    { "do": "drag", "from": [0.20, 0.35], "to": [0.20, 0.75], "button": "middle", "steps": 20, "slice": 0.04, "after": 1.4 },
+    { "do": "key", "name": "f9" },
+    { "do": "waitlog", "marker": "[rectdump] #3", "timeout": 20 },
+    { "do": "wait", "sec": 0.8 },
+    { "do": "shot", "name": "bg_back" }
+  ]
+}

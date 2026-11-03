@@ -40,9 +40,9 @@ public static class NodeCatalog
         // structId 同样预置 st，跟关卡表 QueueStart 写的实例号对齐。
         new("queue_new", "创建队列", "structnew", "datastruct", "purple", "structId", "st") { Sub = "队列" },
         new("queue_push", "入队", "queue_push", "datastruct", "purple") { Sub = "队列" },
-        new("queue_pop", "出队", "queue_pop", "datastruct", "purple") { Sub = "队列" },
+        new("queue_pop", "出队", "queue_pop", "datastruct", "purple") { Sub = "队列" }
 
-        new("sample_input", "样例输入板", "sample_input", "sample", "honey"),
-        new("sample_compare", "样例对比板", "sample_compare", "sample", "mint")
+        // 「样例」这一栏整个摘掉：样例输入板 / 样例对比板改由关卡常驻在画板上，玩家不需要（也不允许）自己拖进来，
+        // 详见 GraphView.IsPinned。NodeType 定义照旧保留，旧存档与关卡里的这两块板照样能加载。
     };
 }

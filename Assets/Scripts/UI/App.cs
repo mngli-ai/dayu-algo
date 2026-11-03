@@ -17,7 +17,7 @@ public sealed class App : MonoBehaviour
     public RectTransform OverlayLayer; // 覆盖层（token、提示）
     public GraphView GraphCanvas;
     public RectTransform GuideLayer;   // 首次使用引导层
-    public RectTransform TopBarRect, PaletteRect, InspectorRect, TraceRect, FooterRect;
+    public RectTransform TopBarRect, PaletteRect, InspectorRect, TraceRect;
 
     // 时间/尺寸常量：token 飞行 280ms、事件间隔 150ms、单次最多播放 200 个事件
     // 运行速度：慢速 / 正常 / 快速，由顶栏的速度按钮切换
@@ -36,10 +36,12 @@ public sealed class App : MonoBehaviour
         }
     }
     const int MaxPlayEvents = 200;
-    // 追踪栏 2 号字行高 28：变量区从栏顶第 34px 起排，4 行就会压到 872 的署名栏，所以总行数收在 3
+    // 追踪栏 2 号字行高 28：变量区从栏顶第 8px 起排（「变量 / 数据」小标题去掉了，行首自带「输入 =」「输出 =」，不需要标题也认得出），
+    // 3 行正好 8+84=92，压在 104 的底栏里还剩 12px 余量
     const int MaxVarItems = 3;         // 变量区里变量本身最多 3 行
     const int MaxVarLines = 3;         // 变量区总行数（含输入/输出行）
     const int MaxParamLines = 8;       // 检查器里参数最多 8 行
+    const float TraceH = 104f;         // 底栏总高：署名栏摘掉后只剩追踪栏这一层
     const float MsgX = 210f, MsgW = 880f, VarX = 1104f, VarW = 326f;
     public const float HeaderLevelW = 620f;   // 顶栏「章节 · 关卡名」可用的最大宽度；右边按钮排从 x=1030 起，留得住（自测按这个值逐关盯截断）
     public const float InspectorW = 330f;
@@ -121,20 +123,20 @@ public sealed class App : MonoBehaviour
         // 平移画布时卡片滑到左栏下面，就该被左栏盖住，而不是糊在栏上面。
         // 六块面板各自贴住屏幕边（响应式锚点）：窗口比例变了只拉伸画布，
         // 右边不露黑边、底栏不被裁掉；1440x900 下与旧固定坐标完全重合。
-        CanvasHost    = Panel(root, "Canvas",    176,  44,  934,  684, Theme.Bg);
+        // 底栏从 172（追踪 144 + 署名 28）压到 104：玩家嫌它占地方。署名不再常驻画面底部，
+        // 改放主菜单落款与说明书「素材来源」页——CC BY-NC-SA 要求的是「按媒介惯例署名」，不是「必须常驻游戏主界面」。
+        CanvasHost    = Panel(root, "Canvas",    176,  44,  934,  752, Theme.Bg);
         TopBarRect    = Panel(root, "TopBar",    0,    0,   1440, 44,  Theme.Paper);
-        PaletteRect   = Panel(root, "Palette",   0,    44,  176,  684, Theme.Paper);
-        InspectorRect = Panel(root, "Inspector", 1110, 44,  330,  684, Theme.Paper);
-        TraceRect     = Panel(root, "Trace",     0,    728, 1440, 144, Theme.Paper);
-        FooterRect    = Panel(root, "Footer",    0,    872, 1440, 28,  Theme.Paper);
+        PaletteRect   = Panel(root, "Palette",   0,    44,  176,  752, Theme.Paper);
+        InspectorRect = Panel(root, "Inspector", 1110, 44,  330,  752, Theme.Paper);
+        TraceRect     = Panel(root, "Trace",     0,    796, 1440, 104, Theme.Paper);
         Edge(TopBarRect,    new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, -44f),   Vector2.zero);
-        Edge(PaletteRect,   new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(0f, 172f),   new Vector2(176f, -44f));
-        Edge(InspectorRect, new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(-330f, 172f), new Vector2(0f, -44f));
-        Edge(TraceRect,     new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0f, 28f),    new Vector2(0f, 172f));
-        Edge(FooterRect,    new Vector2(0f, 0f), new Vector2(1f, 0f), Vector2.zero,            new Vector2(0f, 28f));
-        Edge(CanvasHost,    new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(176f, 172f), new Vector2(-330f, -44f));
+        Edge(PaletteRect,   new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(0f, TraceH),  new Vector2(176f, -44f));
+        Edge(InspectorRect, new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(-330f, TraceH), new Vector2(0f, -44f));
+        Edge(TraceRect,     new Vector2(0f, 0f), new Vector2(1f, 0f), Vector2.zero,             new Vector2(0f, TraceH));
+        Edge(CanvasHost,    new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(176f, TraceH), new Vector2(-330f, -44f));
         SetBlocking(TopBarRect); SetBlocking(PaletteRect); SetBlocking(InspectorRect);
-        SetBlocking(TraceRect); SetBlocking(FooterRect);
+        SetBlocking(TraceRect);
 
         // 画布点阵：24px 一个淡点、120px 一个亮点，给平移一个参照物，也免得整片底色发空
         var grid = Child("Grid", CanvasHost);
@@ -146,13 +148,13 @@ public sealed class App : MonoBehaviour
 
         // 周边栏与画布之间压一条 2px 沙色分隔，面板和画布才分得开
         Divider(root, "DivTop",    0,    42,  1440, 2);
-        Divider(root, "DivLeft",   174,  44,  2,   684);
-        Divider(root, "DivRight",  1110, 44,  2,   684);
-        Divider(root, "DivBottom", 0,    726, 1440, 2);
+        Divider(root, "DivLeft",   174,  44,  2,   752);
+        Divider(root, "DivRight",  1110, 44,  2,   752);
+        Divider(root, "DivBottom", 0,    794, 1440, 2);
         Edge(FindRect(root, "DivTop"),    new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, -44f),   new Vector2(0f, -42f));
-        Edge(FindRect(root, "DivLeft"),   new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(174f, 172f), new Vector2(176f, -44f));
-        Edge(FindRect(root, "DivRight"),  new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(-330f, 172f), new Vector2(-328f, -44f));
-        Edge(FindRect(root, "DivBottom"), new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0f, 170f),   new Vector2(0f, 172f));
+        Edge(FindRect(root, "DivLeft"),   new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(174f, TraceH), new Vector2(176f, -44f));
+        Edge(FindRect(root, "DivRight"),  new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(-330f, TraceH), new Vector2(-328f, -44f));
+        Edge(FindRect(root, "DivBottom"), new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0f, TraceH - 2f), new Vector2(0f, TraceH));
 
         // 题栏左边缘中间的「书签」拉手：凸出栏外 26px，按一下收起题栏、再按一下展开。
         // 收起时整栏往右滑出屏幕、画布跟着长满，只剩这个拉手贴住屏幕右沿。
@@ -172,7 +174,8 @@ public sealed class App : MonoBehaviour
 
         // 画布底部操作提示：贴画布下沿居中，窗口拉高拉矮都跟着底边走，
         // 再用固定 y 会悬在半空压住卡片（1280x1024 那种偏方比例下实测会）
-        var hint = Label(CanvasHost, "单击选中 · 双击进表达式 · 拖空白框选 · Delete 删除 · Ctrl+滚轮缩放", 10, 648, Theme.WhaleDeep, 2);
+        // 删除走右键，这行不再写 Delete；剩下的详细操作归「说明书」
+        var hint = Label(CanvasHost, "单击选中 · 双击进表达式 · 拖空白框选 · 右键删除 · Ctrl+滚轮缩放", 10, 648, Theme.WhaleDeep, 2);
         hint.gameObject.name = "CanvasHint";
         hint.raycastTarget = false;
         var hintRt = hint.rectTransform;
@@ -186,12 +189,23 @@ public sealed class App : MonoBehaviour
         guideImage.color = new Color(0, 0, 0, 0);
         guideImage.raycastTarget = false;
 
+        // -menurect：把每一枚菜单层与顶栏按钮的矩形打进日志，真实鼠标验收照日志坐标下鼠标。
+        // 第十七轮主菜单四个按钮全哑（闭包捕获 for 计数器），就是靠这个逐个真点出来的。
+        // 必须赶在 BuildTopBar 之前置位，否则顶栏那一排自报不了坐标。
+        menuRectDump = HasArg("-menurect");
         BuildTopBar();
         BuildPalette();
         BuildInspector();
         BuildTrace();
-        BuildFooter();
         BuildMenuLayer();
+
+        // 判题特效层（AC 彩带 / WA 红十字 / 通关礼花）挂 root 的最后一位，而不是 OverlayLayer：
+        // 通关横幅会点亮 menuBackdrop——一整屏不透明的底衬，盖在 OverlayLayer 之上——
+        // 特效若铺在它下面，礼花恰好在全片最该庆祝的那一刻被完全挡住，等于没做。
+        // 这一层 blocksRaycasts=false，浮在菜单之上也不吃鼠标，不会挡住横幅按钮。
+        VerdictFx.Instant = HasArg("-shot");
+        var fxLayer = VerdictFx.Attach(uiRoot);
+        if (fxLayer != null) fxLayer.transform.SetAsLastSibling();
 
         GraphCanvas.NodeSelected += OnNodeSelected;
         GraphCanvas.NodeDeleteRequested += OnNodeDeleteRequested;
@@ -235,6 +249,7 @@ public sealed class App : MonoBehaviour
             if (card != null) GraphCanvas.NotifySelected(card);
         }
         if (HasArg("-submit")) { StartCoroutine(SubmitDemo()); }
+        if (HasArg("-watest")) { StartCoroutine(WaDemo()); }
         if (HasArg("-opedit") && GraphCanvas != null)
         {
             var op = GraphCanvas.CurrentGraph.Nodes.Find(n => n != null && n.Type == "binop");
@@ -289,7 +304,7 @@ public sealed class App : MonoBehaviour
         // -skingrid：每种结构各摆一块，验收整卡即结构的皮肤
         if (HasArg("-skingrid")) StartCoroutine(SkinGridDemo());
         if (HasArg("-levelselect")) ShowLevelSelect();
-        else if (HasArg("-help")) ShowHelp();
+        else if (HasArg("-help")) ShowManual();
         else if (HasArg("-menu")) ShowMainMenu();
         // 不带 -level 就是从游戏入口进来：先落在主菜单，别直接砸进关卡
         else if (string.IsNullOrEmpty(startLevel) && !HasArg("-shot")) ShowMainMenu();
@@ -931,6 +946,29 @@ public sealed class App : MonoBehaviour
         yield return new WaitForSeconds(.6f);
     }
 
+    // -watest：把标准答案里「输出」的表达式改成恒错的 0 再提交，专门拍 WA 那一套现场
+    // （红十字拍在徽标上 + 火星 + 抖徽标 + wa 音）。正常通关链只会出 AC，
+    // 没有这条入口，WA 只能靠离线渲染图说话，证不到「游戏里真会这样」。
+    IEnumerator WaDemo()
+    {
+        // 冷启动要几秒，固定等 1.2s 读到的是「图还没加载」而不是玩家改坏的输出——那样这条入口等于没生效。
+        // 改成轮询到输出模块真的在图上为止（最多 60s），后面的链路才真的跑在关卡里。
+        GraphNode outNode = null;
+        float deadline = Time.realtimeSinceStartup + 60f;
+        while (outNode == null && Time.realtimeSinceStartup < deadline)
+        {
+            yield return new WaitForSeconds(.25f);
+            var g = GraphCanvas != null ? GraphCanvas.CurrentGraph : null;
+            if (g != null) outNode = g.Nodes.Find(n => n != null && n.Type == "output");
+        }
+        if (outNode == null) { Debug.Log("[wa] 这张图里没有输出模块（要配 -solution 一起用）"); yield break; }
+        outNode.Params["outputExpr"] = "0";
+        Debug.Log("[wa] 已把输出表达式改成恒错的 0，提交");
+        yield return new WaitForSeconds(.3f);
+        SubmitLevel();
+        yield return new WaitForSeconds(2f);
+    }
+
     // -tracedemo：直接进跟踪模式，验收「不再先把整片跑一遍」
     IEnumerator TraceDemo()
     {
@@ -1189,6 +1227,8 @@ public sealed class App : MonoBehaviour
             bx += rt.sizeDelta.x + gap;
         }
         Debug.Log("[btn] 顶栏按钮组总宽 " + total + "（贴右 " + rightPad + "）");
+        if (menuRectDump)
+            for (int i = 0; i < created.Count; i++) RectLog("顶栏按钮 " + btns[i], created[i].Rect);
         RefreshTopBarButtons();
     }
 
@@ -1375,6 +1415,8 @@ public sealed class App : MonoBehaviour
         var next = NextLevel(level.Id);
         // 本关通过给四音琶音，整套关卡全打通才给和弦——两个都留会同帧糊成一团
         SoundSystem.Play(next == null ? "clear" : "ac");
+        // 礼花在横幅立起来之前铺满上半屏：特效层比 menuBackdrop 更晚绘制，才不会被底衬整个盖住
+        VerdictFx.Celebration(level.Id);
         string line = "样板 " + visiblePassed + " 条 + 抽查 " + hiddenPassed + " 条全部通过";
         string body = next == null
             ? line + "\n" + Levels.All.Count + " 关全部打通，没有更多关卡了。"
@@ -1430,7 +1472,7 @@ public sealed class App : MonoBehaviour
 
     public const int SubAutoCollapseThreshold = 2;
 
-    // ---------------- 主菜单 / 关卡选择 / 玩法说明 ----------------
+    // ---------------- 主菜单 / 关卡选择 / 说明书 ----------------
 
     RectTransform uiRoot;
     GameObject menuBackdrop;
@@ -1441,6 +1483,16 @@ public sealed class App : MonoBehaviour
     Image menuHero;
     float menuHeroX, menuHeroY;
     Coroutine menuAnim;
+
+    // 主菜单海底舞台上的各家 AI 拟人立绘。互动感不靠骨骼动画，靠「两帧动作按相位轮着切 + ±2px 呼吸」：
+    // 站在一起的两个人一个 idle 一个 talk，看上去就是在递东西、在说话。
+    sealed class MenuPersona
+    {
+        public Image Img;
+        public string Key, Act, ActA, ActB;
+        public float X, FootY, Height, Phase;
+    }
+    readonly List<MenuPersona> menuStageFx = new List<MenuPersona>();
 
     void BuildMenuLayer()
     {
@@ -1515,6 +1567,51 @@ public sealed class App : MonoBehaviour
         menuAnim = StartCoroutine(MenuAnimRoutine());
     }
 
+    // 主菜单海底舞台：各家 AI 拟人的像素立绘站在弹窗后面。
+    // 必须在 MenuShell 之前铺——menuDialog 是 menuBackdrop 后建的子节点，后建的渲染在上，面板才会挡在立绘前面。
+    // 画布 1440x900，居中面板 940x600 占 x=250..1190 / y=110..710（距顶）：
+    // 于是左右各留一条 250px 的竖廊站 3 号大个，面板下方留一条 190px 的横廊站 2 号小个。
+    void MenuPersonaStage()
+    {
+        if (menuBackdrop == null) return;
+        var back = (RectTransform)menuBackdrop.transform;
+
+        PutPersona(back, "dragon", "talk", "wave", 26f, 864f, 3, true, 0.0f);      // 朝右下的舞台递单据
+        PutPersona(back, "claude", "talk", "idle", 1222f, 864f, 3, false, 1.1f);   // 朝左边的 gemini 立规矩
+
+        // 前排两两相对：talk 帧画的是朝左递东西，所以站左边那位要 flipX 才朝向右边那位
+        float fx = 376f;
+        PutPersona(back, "dayu", "eat", "idle", fx, 876f, 2, true, 0.4f); fx += 140f;
+        PutPersona(back, "gemini", "wave", "talk", fx, 876f, 2, false, 1.6f); fx += 140f;
+        PutPersona(back, "doubao", "wave", "talk", fx, 876f, 2, true, 0.9f); fx += 140f;
+        PutPersona(back, "grok", "talk", "wave", fx, 876f, 2, false, 2.2f); fx += 140f;
+        PutPersona(back, "qianwen", "idle", "wave", fx, 876f, 2, false, 1.3f);
+    }
+
+    // footY = 脚线距画布顶（和 Panel 的 y 同口径）；立绘 64x80，scale 2=128x160 / 3=192x240 / 4=256x320。
+    void PutPersona(RectTransform parent, string key, string actA, string actB,
+                    float x, float footY, int scale, bool flipX, float phase)
+    {
+        var spr = Personas.Frame(key, actA);
+        if (spr == null) return;                       // 缺图就跳过这一格，主菜单照常开
+        float pw = 64f * scale, ph = 80f * scale;
+        var go = Panel(parent, "Persona_" + key, x, footY - ph, pw, ph, Color.white);
+        var img = go.GetComponent<Image>();
+        img.sprite = spr;
+        img.preserveAspect = true;
+        img.raycastTarget = false;
+        // 翻向只能翻矩形（这套 uGUI 没有 Graphic.flipX）：pivot 收到水平中心，翻过去仍占原来那一格
+        go.pivot = new Vector2(.5f, 1f);
+        go.anchoredPosition = new Vector2(x + pw * .5f, -(footY - ph));
+        if (flipX) go.localScale = new Vector3(-1f, 1f, 1f);
+        menuDeco.Add(go);                              // 交给 ClearMenuScenery 连同渐变带一起回收
+        menuStageFx.Add(new MenuPersona
+        {
+            Img = img, Key = key, Act = actA, ActA = actA, ActB = actB,
+            X = x + pw * .5f, FootY = footY, Height = ph, Phase = phase,
+        });
+    }
+
     IEnumerator MenuAnimRoutine()
     {
         var wait = new WaitForSeconds(.05f);      // 每 50ms 挪一格，像素画本来就是一格一格的
@@ -1537,6 +1634,21 @@ public sealed class App : MonoBehaviour
             if (menuWaveB != null) menuWaveB.anchoredPosition = new Vector2(-W * 2f + Mathf.Sin(t * .35f + 1.6f) * 40f, 26f);
             if (menuHero != null)
                 menuHero.rectTransform.anchoredPosition = new Vector2(menuHeroX, -menuHeroY + Mathf.Sin(t * 1.3f) * 3f);
+            for (int i = 0; i < menuStageFx.Count; i++)
+            {
+                var p = menuStageFx[i];
+                if (p.Img == null) continue;
+                // ±2px、每格一跳的像素呼吸；相位各不相同，才不会一整排同步抖动
+                float dy = Mathf.Round(Mathf.Sin(t * 1.3f + p.Phase) * 2f);
+                p.Img.rectTransform.anchoredPosition = new Vector2(p.X, -(p.FootY - p.Height) + dy);
+                // 每 3 秒在两个动作间切一次：站在一起的两个人交替说话/递东西，就是「互动」
+                string want = (int)((t + p.Phase) / 3f) % 2 == 0 ? p.ActA : p.ActB;
+                if (want != p.Act)
+                {
+                    var s = Personas.Frame(p.Key, want);
+                    if (s != null) { p.Img.sprite = s; p.Act = want; }   // 缺帧就留住上一帧，绝不把立绘刷成空白
+                }
+            }
             yield return wait;
         }
         menuAnim = null;
@@ -1549,6 +1661,7 @@ public sealed class App : MonoBehaviour
             if (menuDeco[i] != null) Destroy(menuDeco[i].gameObject);
         menuDeco.Clear();
         menuBubbles.Clear();
+        menuStageFx.Clear();
         menuWaveA = menuWaveB = null;
         menuHero = null;
     }
@@ -1570,6 +1683,13 @@ public sealed class App : MonoBehaviour
         frame.effectDistance = new Vector2(3, -3);
         // 弹窗从 0.94 倍弹到位并淡入，和浮窗、卡片那套补间口径一致
         var cg = menuDialog.gameObject.AddComponent<CanvasGroup>();
+        if (menuRectDump)
+        {
+            // 验收模式下直接落定：弹入期间整块弹窗缩在 94%，RectLog 打的是这一刻的矩形，
+            // 等真鼠标照坐标下下去时补间早播完了，越靠边角偏得越多（右上角「关闭」就是这么打空的）。
+            cg.alpha = 1f;
+            return menuDialog;
+        }
         cg.alpha = 0f;
         StartCoroutine(Tween.Run(this, .18f, k =>
         {
@@ -1581,6 +1701,11 @@ public sealed class App : MonoBehaviour
     }
 
     // 打开一层居中弹窗：返回内容面板，按钮与文字由调用方摆
+    // 主菜单此刻是否摊着。「关闭」用它决定回哪儿：从主菜单点进说明书/关卡选择，关闭该回主菜单；
+    // 从关卡里点进说明书，关闭该回画布。一律 HideMenu 的话，主菜单 → 说明书 → 关闭 会把玩家
+    // 扔在一张空画布上——看上去跟上一轮「只有关闭能点」那个失灵一模一样。
+    bool mainMenuUp;
+
     RectTransform MenuOpen(float w, float h, string title)
     {
         var dialog = MenuShell(w, h);
@@ -1592,13 +1717,16 @@ public sealed class App : MonoBehaviour
         dot.GetComponent<Image>().raycastTarget = false;
         var t = Label(dialog, title, 42, 14, Theme.Ink, 2);
         t.rectTransform.sizeDelta = new Vector2(w - 62f, 30f);
-        var close = PixelButton.Create(dialog, "关闭", HideMenu, 0, 24);
+        var close = PixelButton.Create(dialog, "关闭", mainMenuUp ? (Action)ShowMainMenu : HideMenu, 0, 24);
         close.Rect.anchoredPosition = new Vector2(w - close.Rect.sizeDelta.x - 12f, -12f);
+        if (menuRectDump) RectLog("菜单按钮 关闭", close.Rect);
         return dialog;
     }
 
     void HideMenu()
     {
+        mainMenuUp = false;
+        Debug.Log("[menu] 菜单关闭");
         ClearMenuScenery();
         if (menuBackdrop != null) menuBackdrop.SetActive(false);
         if (menuDialog != null) { Destroy(menuDialog.gameObject); menuDialog = null; }
@@ -1623,6 +1751,38 @@ public sealed class App : MonoBehaviour
         return d;
     }
 
+    // 主菜单左右两栏的横向分区。写成常量 + 纯函数不是洁癖：立绘题注「深海值班中」原先走整块弹窗居中，
+    // 落点横穿进右栏，正好盖在「共 13 关 · 已通过 1 关」那一行上，肉眼是一片糊。
+    public const float MenuArtX = 24f, MenuArtW = 230f;   // 立绘框（HeroFrame）的左缘与宽：题注只许在这条带里居中
+    public const float MenuColX = 286f, MenuColW = 630f;  // 右栏（进度 / 按钮 / 落款）的左缘与宽
+    public const float MenuArtBottom = 470f;              // 立绘框底边：140 + 330
+    public const float MenuCaptionY = 478f;               // 题注行顶：贴着框底，既不压框也够不到右栏
+    public const float MenuDialogW = 940f, MenuDialogH = 600f;   // 主菜单弹窗尺寸，排版余量按这两个数算
+    public const string MenuCaptionText = "深海值班中";
+
+    // 题注居中后的左上角 x。文字宽到超出立绘栏时贴左缘放下，不再往右栏那边探。
+    public static float MenuCaptionLeft(float textW)
+    {
+        return Mathf.Max(MenuArtX, MenuArtX + Mathf.Round((MenuArtW - textW) * .5f));
+    }
+
+    // 出场名单：一格宽 / 头像边长。名字必须塞进自己那一格，否则相邻两只的名字会糊成一串。
+    public const float CastSlotW = 80f, CastFace = 56f;
+
+    // 主菜单出场名单的中文名。gemini 那只原先直接写产品名，跟另外六只「××娘 / 昵称」的口径不一样，
+    // 玩家在同一排里看到中英混排会以为是个没做完的占位符。
+    static readonly Dictionary<string, string> CastNames = new Dictionary<string, string>
+    {
+        { "dayu", "大肥鱼" }, { "dragon", "龙娘" }, { "claude", "大小姐" },
+        { "gemini", "gemini娘" }, { "qianwen", "千问娘" }, { "grok", "老司机" }, { "doubao", "豆包" },
+    };
+
+    public static string CastLabelFor(string key)
+    {
+        string s;
+        return CastNames.TryGetValue(key ?? "", out s) ? s : null;
+    }
+
     // 居中一行标签，返回宽度方便调用方排版
     PixelText MenuLine(RectTransform parent, float y, string text, Color color, int scale)
     {
@@ -1634,13 +1794,22 @@ public sealed class App : MonoBehaviour
     }
 
     // 一行居中按钮（可多枚并排），按文字实际宽度居中
+    bool menuRectDump;        // -menurect：每排完一行按钮就把矩形打进日志，供真实鼠标照坐标点击
+
     void MenuButtons(RectTransform parent, float y, params object[] textActionPairs)
     {
         var list = new List<PixelButton>();
+        var names = new List<string>();
         for (int i = 0; i + 1 < textActionPairs.Length; i += 2)
         {
-            var b = PixelButton.Create(parent, (string)textActionPairs[i], () => { SoundSystem.Play("click"); ((Action)textActionPairs[i + 1])?.Invoke(); }, 0, 28, i == 0);
+            // 必须先抄成循环体内的局部变量再进闭包：C# 的 for 计数器整个循环只有一份，
+            // 直接捕获 i 会让所有按钮在点击那一刻读到越界的 i，主菜单四个按钮当时就是这么全哑的。
+            string label = (string)textActionPairs[i];
+            Action click = (Action)textActionPairs[i + 1];
+            bool primary = i == 0;
+            var b = PixelButton.Create(parent, label, () => { SoundSystem.Play("click"); click?.Invoke(); }, 0, 28, primary);
             list.Add(b);
+            names.Add(label);
         }
         float total = 0f;
         foreach (var b in list) total += b.Rect.sizeDelta.x;
@@ -1651,6 +1820,8 @@ public sealed class App : MonoBehaviour
             list[i].Rect.anchoredPosition = new Vector2(x, -y);
             x += list[i].Rect.sizeDelta.x + 10f;
         }
+        if (menuRectDump)
+            for (int i = 0; i < list.Count; i++) RectLog("菜单按钮 " + names[i], list[i].Rect);
     }
 
     void ShowMainMenu()
@@ -1659,8 +1830,10 @@ public sealed class App : MonoBehaviour
         // 回主菜单就是「暂时退出」：先把这一关没落盘的改动写完，玩家下次进来才看得到自己的进度
         SaveSystem.Flush();
         SaveProgressMeta();
+        VerdictFx.StopAll();                 // 特效层挂在 uiRoot 最上面，不收会在主菜单头顶继续撒彩带
         MenuScenery();                       // 先把海底铺好，弹窗才是最后一层
-        float w = 760f, h = 486f;
+        MenuPersonaStage();                  // 立绘也铺在弹窗后面，必须赶在 MenuShell 之前挂
+        float w = MenuDialogW, h = MenuDialogH;
         var d = MenuShell(w, h);
         MenuRivets(d, w, h);
 
@@ -1668,33 +1841,35 @@ public sealed class App : MonoBehaviour
         const string title = "大肥鱼の算法大冒险";
         var tm = PixelText.MeasureString(title, 4);
         float tx = Mathf.Round((w - tm.x) * .5f);
-        var shadow = Label(d, title, tx + 3f, 18f, Theme.A(Theme.Whale, .7f), 4);
+        var shadow = Label(d, title, tx + 3f, 20f, Theme.A(Theme.Whale, .7f), 4);
         shadow.raycastTarget = false;
-        var big = Label(d, title, tx, 14f, Theme.Ink, 4);
+        var big = Label(d, title, tx, 16f, Theme.Ink, 4);
         big.raycastTarget = false;
-        MenuLine(d, 78, "把算法画成一张会跑通的图", Theme.WhaleDeep, 2);
-        var rule = Panel(d, "MenuTitleRule", 180, 110, w - 360, 2f, Theme.Honey);
+        MenuLine(d, 84, "把算法画成一张会跑通的图", Theme.WhaleDeep, 2);
+        var rule = Panel(d, "MenuTitleRule", 210, 118, w - 420, 2f, Theme.Honey);
         rule.GetComponent<Image>().raycastTarget = false;
         for (int i = 0; i < 3; i++)
         {
-            var p = Panel(d, "MenuTitleDot" + i, w * .5f - 18f + i * 18f, 118, 6, 6, Theme.HoneyDeep);
+            var p = Panel(d, "MenuTitleDot" + i, w * .5f - 18f + i * 18f, 126, 6, 6, Theme.HoneyDeep);
             p.GetComponent<Image>().raycastTarget = false;
         }
 
         // 左半边：主角立绘（第三方女仆鲸鱼娘），白框 + 薄荷底 + 呼吸起伏
-        var artFrame = Panel(d, "HeroFrame", 22, 132, 210, 300, Theme.MintLight);
+        var artFrame = Panel(d, "HeroFrame", MenuArtX, 140, MenuArtW, 330, Theme.MintLight);
         artFrame.GetComponent<Image>().raycastTarget = false;
-        var art = Panel(d, "HeroArt", 26, 136, 202, 292, Theme.White);
+        var art = Panel(d, "HeroArt", MenuArtX + 4f, 144, MenuArtW - 8f, 322, Theme.White);
         var artImg = art.GetComponent<Image>();
         artImg.raycastTarget = false;
         artImg.sprite = HeroAssets.Full;
         artImg.preserveAspect = true;
-        menuHero = artImg; menuHeroX = 26f; menuHeroY = 136f;
-        var caption = MenuLine(d, 442, "深海值班中", Theme.Whale, 2);
+        menuHero = artImg; menuHeroX = MenuArtX + 4f; menuHeroY = 144f;
+        // 题注跟着立绘那一栏居中，不走 MenuLine（那按整块弹窗居中，会一路探进右栏盖住进度行）
+        var caption = Label(d, MenuCaptionText,
+            MenuCaptionLeft(PixelText.MeasureString(MenuCaptionText, 2).x), MenuCaptionY, Theme.Whale, 2);
         caption.raycastTarget = false;
 
-        // 右半边：进度 → 按钮 → 上手两句话 → 落款
-        var col = Panel(d, "MenuCol", 250, 132, 488, 300, new Color(0, 0, 0, 0));
+        // 右半边：进度 → 按钮 → 上手两句话 → 出场名单 → 落款
+        var col = Panel(d, "MenuCol", MenuColX, 140, MenuColW, 360, new Color(0, 0, 0, 0));
         col.GetComponent<Image>().raycastTarget = false;
         int cleared = 0;
         foreach (var l in Levels.All) if (IsCleared(l.Id)) cleared++;
@@ -1702,22 +1877,32 @@ public sealed class App : MonoBehaviour
         ChapterBar(col, 34, "第一章", CountWhere(false), CountWhere(false, true));
 
         MenuButtons(col, 78, "开始游戏", (Action)StartFromMenu, "选择关卡", (Action)ShowLevelSelect);
-        MenuButtons(col, 120, "玩法说明", (Action)ShowHelp, "重置进度", (Action)ResetProgress);
+        MenuButtons(col, 120, "说明书", (Action)(() => ShowManual()), "重置进度", (Action)ConfirmResetProgress);
 
         var h1 = MenuLine(col, 168, "连线：按住输出端口拖到输入端口上松手", Theme.Ink, 2);
         h1.raycastTarget = false;
         var h2 = MenuLine(col, 192, "调参：单击选中模块，双击直接改表达式", Theme.Ink, 2);
         h2.raycastTarget = false;
-        var credit = MenuLine(col, 236, "主角：大肥鱼（形象借第三方素材·溟月）", Theme.Whale, 2);
+        MenuCastStrip(col, 232, MenuColW);
+        var credit = MenuLine(col, 320, "主角：大肥鱼（形象借第三方素材·溟月）", Theme.Whale, 2);
         credit.raycastTarget = false;
-        var total = MenuLine(col, 268, "共 " + Levels.All.Count + " 关 · 已通过 " + cleared + " 关", Theme.Whale, 2);
+        var total = MenuLine(col, 352, "共 " + Levels.All.Count + " 关 · 已通过 " + cleared + " 关", Theme.Whale, 2);
         total.raycastTarget = false;
-        var recent = MenuLine(col, 296, RecentProgressLine(), Theme.WhaleDeep, 1);
+        var recent = MenuLine(col, 384, RecentProgressLine(), Theme.WhaleDeep, 1);
         recent.raycastTarget = false;
+
+        // 署名从画面底部的常驻栏挪到这里：CC BY-NC-SA 要求「按媒介惯例署名」，主菜单落款比每帧压在画布下面的一整栏更合适。
+        // 1 号字两行才塞得下三家作者的 handle，底栏那 28px 就此省给画布。
+        var credit1 = MenuLine(d, 548, CreditLines[0], Theme.Whale, 1);
+        credit1.raycastTarget = false;
+        var credit2 = MenuLine(d, 566, CreditLines[1], Theme.Whale, 1);
+        credit2.raycastTarget = false;
 
         var close = PixelButton.Create(d, "关闭", HideMenu, 0, 24);
         close.Rect.anchoredPosition = new Vector2(w - close.Rect.sizeDelta.x - 12f, -12f);
+        if (menuRectDump) RectLog("菜单按钮 关闭", close.Rect);
         if (menuBackdrop != null) menuBackdrop.SetActive(true);
+        mainMenuUp = true;                     // 之后从这儿点开的弹窗，「关闭」要能回到主菜单
         Debug.Log("[menu] 主菜单打开，进度 " + cleared + "/" + Levels.All.Count);
     }
 
@@ -1732,6 +1917,57 @@ public sealed class App : MonoBehaviour
             if (kv.Value != null && kv.Value.UpdatedTicks > ticks) { ticks = kv.Value.UpdatedTicks; best = kv.Key; }
         return string.IsNullOrEmpty(best) ? "已自动存档 " + count + " 关"
                                           : "已自动存档 " + count + " 关 · 最近 " + best + " " + SaveFlow.TimeShort(ticks);
+    }
+
+    // 出场名单：七个 AI 拟人形象的头像 + 称呼，让玩家在第一屏就认全这张图上有谁在说话。
+    // 缺哪个头像就空哪一格（Personas.Face 只警告不抛），名字照旧画，不会整排塌掉。
+    void MenuCastStrip(RectTransform col, float y, float w)
+    {
+        const float slot = CastSlotW, face = CastFace;
+        var keys = Personas.Keys;
+        float x0 = Mathf.Max(0f, (w - slot * keys.Count) * .5f);
+        for (int i = 0; i < keys.Count; i++)
+        {
+            string key = keys[i];
+            float sx = x0 + i * slot;
+            var f = Personas.Face(key);
+            if (f != null)
+            {
+                var go = Panel(col, "Cast_" + key, sx + (slot - face) * .5f, y, face, face, Color.white);
+                var im = go.GetComponent<Image>();
+                im.sprite = f;
+                im.preserveAspect = true;
+                im.raycastTarget = false;
+            }
+            string nm = CastLabelFor(key);
+            if (nm == null) continue;
+            float tw = PixelText.MeasureString(nm, 1).x;
+            var t = Label(col, nm, sx + (slot - tw) * .5f, y + face + 4f, Theme.WhaleDeep, 1);
+            t.raycastTarget = false;
+        }
+    }
+
+    // 这一关谁出场：直接读 Story 文本，认得出几个就摆几个头像（32x32 画成 48x48），一个都不认得时一行高也不占。
+    // 右栏只有 330px 宽，摆到放不下就停，不会把头像怼出栏外。
+    float StoryFaces(RectTransform host, float y, string story)
+    {
+        const float size = 48f, gap = 8f, x0 = 10f;
+        float x = x0;
+        foreach (var key in Personas.KeysMentioned(story))
+        {
+            var f = Personas.Face(key);
+            if (f == null) continue;
+            if (x + size > InspectorW - 12f) break;
+            var go = Panel(host, "StoryFace_" + key, x, y, size, size, Color.white);
+            var im = go.GetComponent<Image>();
+            im.sprite = f;
+            im.preserveAspect = true;
+            im.raycastTarget = false;
+            x += size + gap;
+        }
+        // 返回的是「排完之后到了多高」，必须是绝对 y：题栏每一步都用 y = 本函数(...) + 2f 续排，
+        // 早前这里回的是相对高度 56，故事正文被拉回栏顶，整段压在「查看标准答案」按钮和头像上。
+        return x > x0 ? y + size + 8f : y;
     }
 
     // 白卡四角钉四枚蜜黄铆钉，弹窗边缘就不只是一条描边
@@ -1750,7 +1986,9 @@ public sealed class App : MonoBehaviour
     {
         var t = Label(col, name, 0, y, Theme.Ink, 2);
         t.raycastTarget = false;
-        var back = Panel(col, "ChapterBack_" + name, 108, y + 6, 258, 10f, Theme.Salt);
+        // 条子跟着栏宽走：主菜单面板变大后不再留一截空右边
+        float barW = Mathf.Max(160f, col.rect.width - 108f - 96f);
+        var back = Panel(col, "ChapterBack_" + name, 108, y + 6, barW, 10f, Theme.Salt);
         back.GetComponent<Image>().raycastTarget = false;
         var edge = back.gameObject.AddComponent<Outline>();
         edge.effectColor = Theme.Whale;
@@ -1758,11 +1996,11 @@ public sealed class App : MonoBehaviour
         float k = total > 0 ? Mathf.Clamp01((float)done / total) : 0f;
         if (k > 0f)
         {
-            var fill = Panel(col, "ChapterFill_" + name, 109, y + 7, Mathf.Max(2f, Mathf.Round(256f * k)), 8f,
+            var fill = Panel(col, "ChapterFill_" + name, 109, y + 7, Mathf.Max(2f, Mathf.Round((barW - 2f) * k)), 8f,
                 done == total ? Theme.Mint : Theme.Honey);
             fill.GetComponent<Image>().raycastTarget = false;
         }
-        var num = Label(col, done + " / " + total + " 关", 378, y, Theme.WhaleDeep, 2);
+        var num = Label(col, done + " / " + total + " 关", 108f + barW + 14f, y, Theme.WhaleDeep, 2);
         num.raycastTarget = false;
     }
 
@@ -1836,6 +2074,8 @@ public sealed class App : MonoBehaviour
                 string id = l.Id;
                 var go = PixelButton.Create(row, "进入", () => { HideMenu(); LoadLevel(id); }, 60, 26);
                 go.Rect.anchoredPosition = new Vector2(row.rect.width - 74, -5);
+                // 关卡行按解锁进度往下排，写死坐标点第几关会点空；每行自报一次，真鼠标照日志点。
+                if (menuRectDump) RectLog("进入按钮 " + l.Id, go.Rect);
             }
             y += 44;
         }
@@ -1844,23 +2084,156 @@ public sealed class App : MonoBehaviour
         Debug.Log("[menu] 关卡选择打开，共 " + n + " 关");
     }
 
-    void ShowHelp()
+    // ---------------- 说明书 ----------------
+    // 玩家原话：「新增一个说明书功能，里面记录了所有模块的功能以及使用说明，玩家不懂的时候可以随时查看」。
+    // 内容全在 ManualData（纯数据 + 纯函数），这里只管排版和滚动；入口两处：左栏「模块」标题旁的「说明书」与主菜单按钮。
+    // 旧的「玩法说明」整段被它取代——那 9 行文字已经按模块拆成条目，操作部分进了文末操作总表。
+
+    PaletteScroll manualScroll;
+    readonly Dictionary<string, float> manualGroupY = new Dictionary<string, float>();
+
+    void ShowManual(string focusGroup = null)
     {
-        var d = MenuOpen(900, 476, "玩法说明");
-        var body = Label(d, "", 24, 60, Theme.Ink, 2);
-        body.Text = "连线：在模块右侧的出口上按下鼠标，拖到下一个模块左侧的入口松手；离得远可以先点出口、再点入口。\n" +
-                    "删线：把鼠标移到线上，线中间会出现小圆点，点一下就断开这根线。\n" +
-                    "选中与框选：单击模块选中它；在空白处按住左键拖出一个框，框里的模块一起选中，可以整组拖动。\n" +
-                    "批量操作：Ctrl+C 复制、Ctrl+V 粘贴、Delete 删除选中，多选之后一次做完。\n" +
-                    "双击模块：条件、循环、输出、运算这些块直接进表达式编辑，浮窗顶部页签能切换同一个模块的两个表达式；点浮窗外面任意一点就是作废、还原原值。\n" +
-                    "写表达式：左边「可用元素」点一下或拖进来，数学函数 abs、sqrt、pow、min、max、floor、ceil、round、sin、log 和常量 pi、e 都支持；要改名字、类型、循环变量名，点右侧「编辑参数」。\n" +
-                    "数据：运算、条件、循环这些格子直接写变量名或表达式，不用连线。\n" +
-                    "运行：「运行」看整片数字流动；「单步」一下一下走；「断点」在模块旁的圆点上设置。\n" +
-                    "提交：把本关所有样例逐条搬进对比板，全对才记为通过并解锁下一关。";
-        body.Wrap = true; body.WrapWidth = (int)(d.rect.width - 48);
-        MenuButtons(d, 424, "返回菜单", (Action)ShowMainMenu, "选择关卡", (Action)ShowLevelSelect);
+        const float w = 1060f, h = 660f;
+        var d = MenuOpen(w, h, "说明书 · 模块与操作");
+
+        // 顶部一排分组按钮：按每枚实宽往右累加，中英文混排也不会叠
+        float cx = 16f;
+        foreach (var g in ManualData.Groups())
+        {
+            string gg = g;
+            var chip = PixelButton.Create(d, gg, () => JumpManualGroup(gg), 0, 22);
+            chip.Rect.anchoredPosition = new Vector2(cx, -60f);
+            cx += chip.Rect.sizeDelta.x + 6f;
+        }
+        var creditChip = PixelButton.Create(d, "素材来源", () => JumpManualGroup("素材来源"), 0, 22);
+        creditChip.Rect.anchoredPosition = new Vector2(cx, -60f);
+
+        float vpY = 92f, vpH = h - vpY - 14f;
+        var vp = Panel(d, "ManualView", 14, vpY, w - 30f, vpH, new Color(0, 0, 0, 0));
+        vp.GetComponent<Image>().raycastTarget = true;
+        vp.gameObject.AddComponent<RectMask2D>();
+        manualScroll = vp.gameObject.AddComponent<PaletteScroll>();
+        var content = Child("ManualContent", vp);
+        content.anchorMin = content.anchorMax = new Vector2(0, 1);
+        content.pivot = new Vector2(0, 1);
+        float cw = w - 44f;                     // 右侧留 14px 给细滚动条
+        content.sizeDelta = new Vector2(cw, vpH);
+        manualScroll.Content = content;
+
+        float y = 0f;
+        manualGroupY.Clear();
+        foreach (var g in ManualData.Groups())
+        {
+            manualGroupY[g] = y;
+            y += ManualGroupHead(content, g, y, cw);
+            foreach (var e in ManualData.All)
+                if (e.Group == g) y += ManualEntryBlock(content, e, y, cw);
+        }
+        y += ManualGroupHead(content, "操作总表", y, cw);
+        y += ManualControlsBlock(content, y, cw);
+        manualGroupY["素材来源"] = y;
+        y += ManualGroupHead(content, "素材来源", y, cw);
+        y += ManualCreditsBlock(content, y, cw);
+
+        content.sizeDelta = new Vector2(cw, Mathf.Max(vpH, y));
+        manualScroll.SetExtent(y - vpH);
+        ScrollBar.Attach(d, manualScroll, vpH, 5f, vpY + 36f);
+        if (!string.IsNullOrEmpty(focusGroup)) JumpManualGroup(focusGroup);
         if (menuBackdrop != null) menuBackdrop.SetActive(true);
-        Debug.Log("[menu] 玩法说明正文高 " + body.Measure().y);
+        Debug.Log("[manual] 条目 " + ManualData.All.Length + " 条 + 操作 " + ManualData.Controls.Length
+            + " 行，正文高 " + y + "，视口高 " + vpH + "，可滚 " + Mathf.Max(0f, y - vpH));
+    }
+
+    void JumpManualGroup(string g)
+    {
+        float vy;
+        if (manualScroll != null && manualGroupY.TryGetValue(g, out vy)) manualScroll.ScrollTo(vy);
+    }
+
+    float ManualGroupHead(RectTransform parent, string title, float y, float w)
+    {
+        var head = Panel(parent, "MG_" + title, 0, y, w, 26f, Theme.A(Theme.Whale, .16f));
+        head.GetComponent<Image>().raycastTarget = false;
+        var t = Label(head, title, 8, 2, Theme.WhaleDeep, 2);
+        t.raycastTarget = false;
+        return 26f + 6f;
+    }
+
+    // 一条模块说明：招牌一行，功能一句，步骤按序号排，坑和写法各一行；行高统一 18（1 号字块高 14 + 4 空隙）
+    // 返回的是这一块实际吃掉的高度（含块尾留白），调用方直接 y += 它。
+    float ManualEntryBlock(RectTransform parent, ManualEntry e, float y, float w)
+    {
+        const float x0 = 16f, x1 = 30f;
+        float y0 = y;
+        var dot = Panel(parent, "MDot_" + e.Title, 6, y + 9, 6, 6, Theme.Honey);
+        dot.GetComponent<Image>().raycastTarget = false;
+        var title = Label(parent, e.Title, x0, y, Theme.Ink, 2);
+        title.raycastTarget = false;
+        y += 28f;
+        y += ManualLine(parent, e.Summary, x1, y, Theme.Mix(Theme.Ink, Theme.Foam, .34f), w - x1);
+        for (int i = 0; i < e.Steps.Length; i++)
+            y += ManualLine(parent, (i + 1) + ". " + e.Steps[i], x1, y, Theme.Mix(Theme.Ink, Theme.Foam, .5f), w - x1);
+        y += ManualLine(parent, "坑：" + e.Pitfall, x1, y, Theme.Mix(Theme.Coral, Theme.Ink, .5f), w - x1);
+        if (!string.IsNullOrEmpty(e.Example) && e.Example != ManualData.NoExample)
+            y += ManualLine(parent, "写法：" + e.Example, x1, y, Theme.Mix(Theme.Grape, Theme.Ink, .34f), w - x1);
+        var rule = Panel(parent, "MRule_" + e.Title, x0, y + 4, w - x0, 1f, Theme.A(Theme.Salt, .9f));
+        rule.GetComponent<Image>().raycastTarget = false;
+        return y - y0 + 12f;
+    }
+
+    static float ManualLine(RectTransform parent, string text, float x, float y, Color color, float w)
+    {
+        if (string.IsNullOrEmpty(text)) return 0f;
+        var t = Label(parent, text, x, y, color, 1);
+        t.raycastTarget = false;
+        t.rectTransform.sizeDelta = new Vector2(Mathf.Max(1f, w), 16f);
+        return 18f;
+    }
+
+    // 操作总表：左列是按键 / 鼠标动作，右列是它在这张画布上真做了什么。同样返回吃掉的高度。
+    float ManualControlsBlock(RectTransform parent, float y, float w)
+    {
+        const float keyW = 250f, line = 18f;
+        float y0 = y;
+        foreach (var c in ManualData.Controls)
+        {
+            var k = Label(parent, c.Key, 16, y, Theme.WhaleDeep, 1);
+            k.raycastTarget = false;
+            k.rectTransform.sizeDelta = new Vector2(keyW - 20f, 16f);
+            var v = Label(parent, c.What, 16f + keyW, y, Theme.Mix(Theme.Ink, Theme.Foam, .4f), 1);
+            v.raycastTarget = false;
+            v.rectTransform.sizeDelta = new Vector2(Mathf.Max(1f, w - keyW - 20f), 16f);
+            y += line;
+        }
+        return y - y0 + 8f;
+    }
+
+    // 署名与素材口径只写一份：主菜单落款取前两行，说明书「素材来源」页整份列出，改一处不会漏另一处。
+    static readonly string[] CreditLines =
+    {
+        "主角形象为第三方同人作品：原型@上善无形 · 女仆版@ZipZipPipe · 动画@Small-tailqwq · CC BY-NC-SA 4.0 非商业",
+        "关底出现的各家 AI 形象均为同人虚构，与对应厂商无关",
+        "各家 AI 拟人的像素立绘由 tools/gen_personas.py 程序自绘，不含任何第三方形象素材",
+        "音效全部由 tools/gen_sfx.py 程序合成，未使用第三方音频素材",
+        "关卡背景条由 tools/gen_art.py 程序绘制，配色取自本作的 16 色像素色板",
+    };
+
+    float ManualCreditsBlock(RectTransform parent, float y, float w)
+    {
+        float y0 = y;
+        for (int i = 0; i < CreditLines.Length; i++)
+            y += ManualLine(parent, "· " + CreditLines[i], 16f, y, Theme.Mix(Theme.Ink, Theme.Foam, .4f), w - 16f);
+        return y - y0 + 8f;
+    }
+
+    // 一键清掉全部通关键和存档太容易误触：先弹确认，点「确定」才真清。
+    // 「取消」回主菜单，「关闭」（MenuOpen 那颗）也回主菜单——此刻 mainMenuUp 还是 true。
+    void ConfirmResetProgress()
+    {
+        MenuDialog(560, 176, "重置进度",
+            "这会清空全部通关记录和本关存档，而且没法撤销。确定要重置吗？",
+            new object[] { "确定", (Action)ResetProgress, "取消", (Action)ShowMainMenu });
     }
 
     void ResetProgress()
@@ -1895,6 +2268,11 @@ public sealed class App : MonoBehaviour
     void BuildPalette()
     {
         Label(PaletteRect, "模块", 10, 6, Theme.WhaleDeep, 2);
+        // 「说明书」常驻左栏顶部：玩家卡在某块模块上时不用退主菜单就能翻用法。
+        var manualBtn = PixelButton.Create(PaletteRect, "说明书", () => ShowManual(), 0, 26);
+        manualBtn.Rect.anchorMin = manualBtn.Rect.anchorMax = new Vector2(1, 1);
+        manualBtn.Rect.pivot = new Vector2(1, 1);
+        manualBtn.Rect.anchoredPosition = new Vector2(-6f, -6f);
 
         // 左栏放不下全部条目，所以改成「视口 + 内容 + 滚轮」，不再靠 break 把最后的条目丢掉
         float viewW = PaletteRect.rect.width;
@@ -2130,14 +2508,14 @@ public sealed class App : MonoBehaviour
     {
         if (InspectorRect != null)
         {
-            InspectorRect.offsetMin = new Vector2(-w, 172f);
+            InspectorRect.offsetMin = new Vector2(-w, TraceH);
             InspectorRect.offsetMax = new Vector2(0f, -44f);
         }
         if (CanvasHost != null) CanvasHost.offsetMax = new Vector2(-w, -44f);
         var div = uiRoot != null ? FindRect(uiRoot, "DivRight") : null;
         if (div != null)
         {
-            div.offsetMin = new Vector2(-w - 2f, 172f);
+            div.offsetMin = new Vector2(-w - 2f, TraceH);
             div.offsetMax = new Vector2(-w, -44f);
             div.gameObject.SetActive(w > 0f);
         }
@@ -2150,7 +2528,7 @@ public sealed class App : MonoBehaviour
         }
         if (inspectorTabArrow != null) inspectorTabArrow.Text = w > InspectorW * .5f ? "▶" : "◀";
         // 视口 / 内容跟着栏宽走，RectMask2D 才裁得到位；内容本身等滑动结束再按新宽度重排
-        float h = InspectorRect != null && InspectorRect.rect.height > 1f ? InspectorRect.rect.height : 684f;
+        float h = InspectorRect != null && InspectorRect.rect.height > 1f ? InspectorRect.rect.height : 752f;
         if (inspectorView != null) inspectorView.sizeDelta = new Vector2(w, h);
         if (inspectorContent != null) inspectorContent.sizeDelta = new Vector2(Mathf.Max(1f, w), h);
     }
@@ -2181,7 +2559,7 @@ public sealed class App : MonoBehaviour
     {
         if (InspectorRect == null) { RebuildInspector(null); return; }
         // 栏宽按折叠状态取，不读 InspectorRect.rect： Awake 里这一句跑在布局刷新之前，rect 可能还是 0
-        float w = InspectorWidthNow, h = InspectorRect.rect.height > 1f ? InspectorRect.rect.height : 684f;
+        float w = InspectorWidthNow, h = InspectorRect.rect.height > 1f ? InspectorRect.rect.height : 752f;
         inspectorView = Panel(InspectorRect, "InspectorView", 0, 0, w, h, new Color(0, 0, 0, 0));
         inspectorView.GetComponent<Image>().raycastTarget = true;
         inspectorView.gameObject.AddComponent<RectMask2D>();
@@ -2215,6 +2593,8 @@ public sealed class App : MonoBehaviour
         Backdrop.SetChapterFor(level.Chapter);   // 章节换背景：数组关货架、循环关厂房、栈队列关深海
 
         StopRun();
+        // 换关把上一关还在飞的彩带/礼花收掉，并把被抖动过的徽标位置与缩放原样还回去
+        VerdictFx.StopAll();
         SoundSystem.StopAll();   // 换关掐掉上一关还在播的通关长音，否则两关的庆祝音叠在一起
         HideMenu();          // 任何一次换关都要把菜单收起来，否则画布被盖住
         tipsOpen = false;    // 换关重新折回一句题干
@@ -2261,7 +2641,8 @@ public sealed class App : MonoBehaviour
         RebuildInspector(null);
         SetStep(0, 0);
         SetVars(null);
-        SetMessage(notice ?? "点「运行」看数字流动 · 双击模块改表达式 · 右键删除");
+        // 底栏只剩追踪栏一层，常驻提示收短：操作说明整体搬进左侧栏的「说明书」，这一格留给运行反馈
+        SetMessage(notice ?? "点「运行」看数字流动");
         RefreshTopBarButtons();
 
         int nodes = GraphCanvas != null && GraphCanvas.CurrentGraph != null ? GraphCanvas.CurrentGraph.Nodes.Count : 0;
@@ -2569,6 +2950,7 @@ public sealed class App : MonoBehaviour
     void OnNodeDeleteRequested(GraphNode node)
     {
         if (node == null || GraphCanvas == null) return;
+        if (GraphView.IsPinned(node.Type)) { Toast(GraphView.PinnedHint); SoundSystem.Play("error"); return; }
         GraphCanvas.DeleteNode(node.Uid);
         ClearBadges();
         RebuildInspector(null);
@@ -3333,6 +3715,7 @@ public sealed class App : MonoBehaviour
             if (!string.IsNullOrEmpty(level.Story))
             {
                 y = PutInspectorLine("背景故事", y, Theme.GrapeDeep, 2, 0) + 2f;
+                y = StoryFaces(host, y, level.Story) + 2f;
                 y = PutInspectorLine(level.Story, y, Theme.Ink, 2, wrap) + 6f;
             }
             y = PutInspectorLine("题干", y, Theme.HoneyDeep, 2, 0) + 2f;
@@ -3467,7 +3850,7 @@ public sealed class App : MonoBehaviour
     void FinishInspector(float y)
     {
         if (inspectorContent == null || inspectorScroll == null) return;
-        float h = InspectorRect != null && InspectorRect.rect.height > 1f ? InspectorRect.rect.height : 684f;
+        float h = InspectorRect != null && InspectorRect.rect.height > 1f ? InspectorRect.rect.height : 752f;
         // 累加出来的 y 只是「以为排到了多高」：带折行的长题面量出来的高和真正占的位置对不上，
         // 末尾几行会掉到视口下面，滚到底也只露个头，鼠标按下被底栏抢走。按子节点真实下沿再兜一次。
         float need = Mathf.Max(y + 12f, InspectorContentBottom());
@@ -3485,39 +3868,24 @@ public sealed class App : MonoBehaviour
         return y + m.y + 4f;
     }
 
-    void BuildFooter()
-    {
-        // 署名整行居中：锚点拉满底栏，窗口多宽都居中，不会偏在左边 1440 里
-        var t = Label(FooterRect, "主角形象为第三方作品：原型溟月（B站@上善无形）· 女仆版@ZipZipPipe · 动画@Small-tailqwq · CC BY-NC-SA 4.0 非商业 · 各 AI 形象均为同人虚构", 0, 4, Theme.WhaleDeep, 2);
-        var rt = t.rectTransform;
-        rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one;
-        rt.offsetMin = Vector2.zero; rt.offsetMax = Vector2.zero;
-        t.Align = PixelText.TextAlign.Center;
-        t.raycastTarget = false;
-    }
-
     // ---------------- 追踪栏 ----------------
 
     void BuildTrace()
     {
-        // 追踪栏总高 144：左侧步数固定宽度，中间消息，右侧变量区（2 号字，最多 4 行 28px）
-        traceStep = Label(TraceRect, "第 0 / 0 步", 10, 6, Theme.Ink, 2);
+        // 底栏收到 104 高：三列都从栏顶 8px 起排，左边步数 + 一根进度细条，中间消息最多 2 行，右边变量区 3 行
+        traceStep = Label(TraceRect, "第 0 / 0 步", 10, 8, Theme.Ink, 2);
         traceStep.Align = PixelText.TextAlign.Left;
         SetLines(traceStep, "第 0 / 0 步", 190f);
 
-        traceMessage = Label(TraceRect, "点运行，看大肥鱼怎么搬数据", MsgX, 6, Theme.WhaleDeep, 2);
+        traceMessage = Label(TraceRect, "点「运行」看数字流动", MsgX, 8, Theme.WhaleDeep, 2);
         traceMessage.Align = PixelText.TextAlign.Left;
-        SetLines(traceMessage, "点运行，看大肥鱼怎么搬数据", MsgW);
+        SetLines(traceMessage, "点「运行」看数字流动", MsgW);
 
-        var head = Label(TraceRect, "变量 / 数据", VarX, 6, Theme.WhaleDeep, 2);
-        head.Align = PixelText.TextAlign.Left;
-        SetLines(head, "变量 / 数据", VarW);
-
-        traceVars = Label(TraceRect, "", VarX, 34, Theme.Ink, 2);
+        traceVars = Label(TraceRect, "", VarX, 8, Theme.Ink, 2);
         traceVars.Align = PixelText.TextAlign.Left;
         SetLines(traceVars, "", VarW);
 
-        Panel(TraceRect, "Slot", 10, 34, 190, 6, Theme.Salt);
+        Panel(TraceRect, "Slot", 10, 44, 190, 6, Theme.Salt);
         Debug.Log("[trace] step=" + traceStep.rectTransform.rect + " msg=" + traceMessage.rectTransform.rect);
     }
 
@@ -3945,6 +4313,8 @@ public sealed class App : MonoBehaviour
         var cmp = graph != null ? graph.Nodes.Find(n => n != null && n.Type == "sample_compare") : null;
         var sample = CurrentSample();
         if (cmp == null || sample == null) yield break;
+        // 特效的种子按「哪一关第几条样例」定，重跑同一条样例喷出来的彩带逐粒一致，截图才对得上
+        int sampleIndex = level != null && level.Tests != null ? level.Tests.IndexOf(sample) : -1;
 
         var expected = Tokenize(sample.Output);
         var actual = Tokenize(result != null ? result.Output : "");
@@ -4005,13 +4375,21 @@ public sealed class App : MonoBehaviour
             Color c = eq ? Theme.Mint : Theme.Coral;
             if (i < expectedChips.Count) SetChip(expectedChips[i], exp, c);
             if (i < actualChips.Count) SetChip(actualChips[i], act, c);
+            // 逐位落定只喷两三点火星：一位一蓬彩带会把「整条样例过了」的那一蓬淹掉，轻重得分开。
+            // 声音仍归 App 的 pass/fail，VerdictFx 对这两档故意返回 null cue，不会双响。
+            var slot = i < actualChips.Count && actualChips[i] != null ? (RectTransform)actualChips[i].transform : card.Rect;
+            VerdictFx.BurstAt(slot, eq ? VerdictKind.SamplePass : VerdictKind.SampleFail,
+                              VerdictFx.SeedFor(level != null ? level.Id : null, i, eq));
             SetMessage("对比第 " + (i + 1) + " 位：" + exp + (eq ? " = " : " 不等于 ") + act);
             yield return new WaitForSeconds(.18f);
         }
 
         bool accepted = result != null && result.Ok &&
             string.Equals((result.Output ?? "").Trim(), (sample.Output ?? "").Trim(), StringComparison.Ordinal);
-        SetNodeBadge(cmp.Uid, accepted ? "AC" : "WA", accepted ? Theme.Mint : Theme.Coral);
+        var verdict = SetNodeBadge(cmp.Uid, accepted ? "AC" : "WA", accepted ? Theme.Mint : Theme.Coral);
+        // 整条样例的结论才配得上大反馈：AC 喷一蓬彩带并把徽标弹一下，WA 拍红十字 + 火星并抖徽标
+        VerdictFx.BurstAt(verdict, accepted ? VerdictKind.Ac : VerdictKind.Wa,
+                          VerdictFx.SeedFor(level != null ? level.Id : null, sampleIndex, accepted));
         SetMessage(accepted ? "逐位对比完成：AC" : "逐位对比完成：WA");
     }
 
@@ -4362,11 +4740,13 @@ public sealed class App : MonoBehaviour
         if (heroLabel != null) SetHeroCarry(null);
     }
 
-    void SetNodeBadge(string uid, string text, Color color)
+    // 把结论徽标钉在卡片右上角，并把徽标本体交回调用方：
+    // 判题特效要「拍」的就是这一块（AC 弹一下、WA 抖一下），拿不到它只能往屏幕中心乱喷。
+    RectTransform SetNodeBadge(string uid, string text, Color color)
     {
-        if (GraphCanvas == null || string.IsNullOrEmpty(text)) return;
+        if (GraphCanvas == null || string.IsNullOrEmpty(text)) return null;
         var card = GraphCanvas.FindCard(uid);
-        if (card == null) return;
+        if (card == null) return null;
         GameObject old;
         if (badges.TryGetValue(uid, out old) && old != null) Destroy(old);
 
@@ -4395,6 +4775,7 @@ public sealed class App : MonoBehaviour
         label.raycastTarget = false;
 
         badges[uid] = go;
+        return rt;
     }
 
     void ClearBadges()

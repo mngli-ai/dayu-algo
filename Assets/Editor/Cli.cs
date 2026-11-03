@@ -76,6 +76,12 @@ namespace Dayu.EditorTools
             BackdropTests.Run(ref n, ref ok);
             SoundCueTests.Run(ref n, ref ok);
             PanelTintTests.Run(ref n, ref ok);
+            ClosureCaptureTests.Run(ref n, ref ok);
+            SamplePinTests.Run(ref n, ref ok);
+            ManualCoverageTests.Run(ref n, ref ok);
+            PersonaAssetTests.Run(ref n, ref ok);
+            VerdictFxTests.Run(ref n, ref ok);
+            MenuLayoutTests.Run(ref n, ref ok);
             Debug.Log("共 " + n + " 项，通过 " + ok + " 项");
             if (n != ok) EditorApplication.Exit(1);
         }
