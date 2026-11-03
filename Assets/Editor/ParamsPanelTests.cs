@@ -477,6 +477,18 @@ namespace Dayu.EditorTools
             Check(ref total, ref passed, "栈默认收起", collapsed.Contains(App.SubKey("datastruct", "栈")), true);
             Check(ref total, ref passed, "队列默认收起", collapsed.Contains(App.SubKey("datastruct", "队列")), true);
             Check(ref total, ref passed, "超过两行才自动收起", App.SubAutoCollapseThreshold, 2);
+
+            // 目录带高：一二级标题都是 2 号字（28px 高）。早前二级带高 22 且返回时不留间距，
+            // 相邻两条收起的二级目录（`[+]栈` / `[+]队列`）两行字直接叠在一起（README 截图复核抓到）。
+            Check(ref total, ref passed, "一级目录带装得下自己的标题",
+                App.PaletteBandFits(App.PaletteGroupH, App.PaletteGroupTextTop), true);
+            Check(ref total, ref passed, "二级目录带装得下自己的标题",
+                App.PaletteBandFits(App.PaletteSubH, App.PaletteSubTextTop), true);
+            Check(ref total, ref passed, "相邻两条二级目录的行距不小于 2 号字高",
+                App.PaletteSubH + App.PaletteBandGap >= PixelText.CellH * 2, true);
+            // 负对照：旧行距必须被判成装不下，否则上面两条是在自证空话
+            Check(ref total, ref passed, "旧行距 22 判为装不下", App.PaletteBandFits(22f, 0f), false);
+            Check(ref total, ref passed, "条目带高等于 2 号字高", App.PaletteRowH, PixelText.CellH * 2f);
         }
 
         // 题栏左边缘的书签拉手：栏宽和拉手位置必须是同一条算式，差一像素就是肉眼可见的错位

@@ -1,0 +1,17 @@
+{
+  "args": ["-level", "P0", "-screen-width", "1440", "-screen-height", "900", "-screen-fullscreen", "0"],
+  "steps": [
+    { "do": "waitlog", "marker": "[level] P0", "timeout": 90 },
+    { "do": "shot", "name": "t000" },
+    { "do": "wait", "sec": 0.35 },
+    { "do": "shot", "name": "t035" },
+    { "do": "wait", "sec": 0.5 },
+    { "do": "shot", "name": "t085" },
+    { "do": "wait", "sec": 1.2 },
+    { "do": "shot", "name": "t205" },
+    { "do": "wait", "sec": 3.0 },
+    { "do": "shot", "name": "t505" },
+    { "do": "wheel", "at": [0.06, 0.5], "notches": 3, "amount": -1, "after": 0.5 },
+    { "do": "shot", "name": "wheel_down" }
+  ]
+}

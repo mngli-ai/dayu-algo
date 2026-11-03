@@ -2291,11 +2291,23 @@ public sealed class App : MonoBehaviour
         RebuildPalette();
     }
 
+    // 模块栏的三种带高。一二级目录的标题都是 2 号字（PixelText.CellH×2 = 28px 高），
+    // 所以「带高 + 间距」必须容得下「标题在带内的起点 + 字高」，否则相邻两条收起的二级目录会糊在同一行上：
+    // 早前 subH=22 且二级不带间距返回，`[+]栈` 与 `[+]队列` 两行字直接叠成「找栈列」。
+    public const float PaletteRowH = 28f, PaletteGroupH = 28f, PaletteSubH = 28f, PaletteBandGap = 2f;
+    public const float PaletteGroupTextTop = 2f, PaletteSubTextTop = 0f;
+
+    // 一条带装不装得下它自己的标题（纯函数，自测直接查）：带高 + 带间距 ≥ 标题起点 + 2 号字高
+    public static bool PaletteBandFits(float h, float textTop)
+    {
+        return textTop + PixelText.CellH * 2 <= h + PaletteBandGap;
+    }
+
     // 多级目录：Cat 是一级（点标题收起/展开），Sub 是二级（数组 / 栈这种玩家叫得出名字的结构）。
     // 目录顺序跟着 NodeCatalog.All 里各 Cat 首次出现的顺序走，所以「输入输出」置顶是在数据里排的。
     void RebuildPalette()
     {
-        const float rowH = 28f, groupH = 26f, subH = 22f;
+        const float rowH = PaletteRowH, groupH = PaletteGroupH, subH = PaletteSubH;
         if (paletteContent == null || paletteScroll == null) { BuildPalette(); return; }
         for (int i = paletteContent.childCount - 1; i >= 0; i--)
         {
@@ -2352,7 +2364,7 @@ public sealed class App : MonoBehaviour
         head.gameObject.AddComponent<PaletteGroupClick>().Cat = cat;
         var t = Label(head, (collapsed ? "[+]" : "[-]") + CatName(cat), 8, 2, Theme.WhaleDeep, 2);
         t.raycastTarget = false;
-        return h + 2f;
+        return h + PaletteBandGap;
     }
 
     // 二级目录标题：和一级一样整行可点，点一下收起 / 展开它下面的操作。
@@ -2364,7 +2376,7 @@ public sealed class App : MonoBehaviour
         head.gameObject.AddComponent<PaletteSubClick>().Key = SubKey(cat, sub);
         var t = Label(head, (expanded ? "[-]" : "[+]") + sub, 14, 0, Theme.GrapeDeep, 2);
         t.raycastTarget = false;
-        return h;
+        return h + PaletteBandGap;
     }
 
     // 可拖条目：图标靠左，名字用 2 号字，缩进按二级目录深浅走
