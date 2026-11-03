@@ -4,7 +4,7 @@
 
 Unity 6 实现，全部界面与美术是运行时用代码装配的像素风 UI，没有预制体也没有场景美术。
 
-**[下载 Windows 试玩包](https://github.com/mngli-ai/dayu-algo/releases/latest)** · [v0.1.1](https://github.com/mngli-ai/dayu-algo/releases/tag/v0.1.1) — 解压后运行 `dayu.exe`，无需安装。
+**[下载 Windows 试玩包](https://github.com/mngli-ai/dayu-algo/releases/latest)** · [更新日志](https://github.com/mngli-ai/dayu-algo/releases) — 解压后运行 `dayu.exe`，无需安装。
 
 ![走哪条路：题栏故事 + 常驻样例板](docs/screenshots/01-level.png)
 
