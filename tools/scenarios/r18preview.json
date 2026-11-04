@@ -1,0 +1,48 @@
+{
+  "args": ["-level", "L1", "-screen-width", "1440", "-screen-height", "900", "-screen-fullscreen", "0"],
+  "steps": [
+    { "do": "waitlog", "marker": "[level] L1", "timeout": 90 },
+    { "do": "wait", "sec": 2.5 },
+
+    { "do": "key", "name": "f9", "after": 0.5 },
+    { "do": "waitlog", "marker": "[rectdump] #1", "timeout": 20 },
+
+    { "do": "clickrect", "label": "答案按钮", "after": 1.2 },
+    { "do": "waitlog", "marker": "[answer] L1 预览标准答案", "timeout": 20 },
+    { "do": "wait", "sec": 1.0 },
+
+    { "do": "drag", "from": [0.16, 0.08], "to": [0.74, 0.86], "steps": 16, "after": 0.8 },
+    { "do": "shot", "name": "marquee_selected" },
+
+    { "do": "key", "name": "c", "with": ["ctrl"], "after": 0.6 },
+    { "do": "waitlog", "marker": "[sfx] 发声 error", "timeout": 10 },
+    { "do": "waitlog", "marker": "[toast] 标准答案预览是只读的", "timeout": 10 },
+    { "do": "shot", "name": "copy_rejected" },
+
+    { "do": "key", "name": "v", "with": ["ctrl"], "after": 0.6 },
+    { "do": "waitlog", "marker": "[toast] 标准答案预览是只读的", "timeout": 10 },
+    { "do": "shot", "name": "paste_rejected" },
+
+    { "do": "key", "name": "f9", "after": 0.5 },
+    { "do": "waitlog", "marker": "[rectdump] #2", "timeout": 20 },
+    { "do": "clickrect", "label": "答案按钮", "after": 1.2 },
+    { "do": "waitlog", "marker": "已退出标准答案预览", "timeout": 15 },
+    { "do": "wait", "sec": 0.8 },
+
+    { "do": "key", "name": "v", "with": ["ctrl"], "after": 0.6 },
+    { "do": "waitlog", "marker": "[toast] 剪贴板是空的", "timeout": 10 },
+    { "do": "shot", "name": "paste_empty_after_exit" },
+    { "do": "wait", "sec": 2.3 },
+
+    { "do": "drag", "from": [0.16, 0.08], "to": [0.74, 0.86], "steps": 16, "after": 0.8 },
+    { "do": "key", "name": "c", "with": ["ctrl"], "after": 0.6 },
+    { "do": "waitlog", "marker": "[toast] 已复制", "timeout": 10 },
+    { "do": "key", "name": "v", "with": ["ctrl"], "after": 0.6 },
+    { "do": "waitlog", "marker": "[toast] 已粘贴", "timeout": 10 },
+    { "do": "shot", "name": "normal_paste_ok" },
+    { "do": "key", "name": "z", "with": ["ctrl"], "after": 0.8 },
+    { "do": "waitlog", "marker": "已撤销一步", "timeout": 10 },
+    { "do": "shot", "name": "normal_undone" },
+    { "do": "wait", "sec": 1.5 }
+  ]
+}

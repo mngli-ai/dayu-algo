@@ -44,7 +44,45 @@ public sealed class App : MonoBehaviour
     const float TraceH = 104f;         // 底栏总高：署名栏摘掉后只剩追踪栏这一层
     const float MsgX = 210f, MsgW = 880f, VarX = 1104f, VarW = 326f;
     public const float HeaderLevelW = 620f;   // 顶栏「章节 · 关卡名」可用的最大宽度；右边按钮排从 x=1030 起，留得住（自测按这个值逐关盯截断）
+    // Toast 是单行 2 号字、落点 x=12，画布宽 1440，右边同样留 12 → 一行最多这么宽。
+    // 提示语超了就会顶出屏幕右沿（Toast 不折行），所以每条常驻提示都按这个上限自测。
+    public const float ToastLineW = 1440f - 24f;
     public const float InspectorW = 330f;
+
+    // 画布提示行的底板（第十八轮⑤）：背景层一路铺到画布底边后，「双击进表达式」「拖空白框选」
+    // 直接压在亮粉珊瑚上，截图上被花纹啃掉一半。底板尺寸全部由实测文字宽算出，留白与钳位写成纯函数。
+    public const float HintPadX = 14f, HintPadY = 8f;          // 底板比文字框左右 / 上下各多留的余量
+    public const float HintPadMinX = 8f, HintPadMinY = 6f;     // 「算留得住」的下限，低于它判为压字
+    public const float HintEdge = 12f;                         // 底板距屏左右缘的最小走道
+    public const float HintPlateBottom = 8f, HintTextBottom = 16f;   // 底板与文字各自的底边离画布底沿的高度
+    public const float HintPlateAlpha = .86f;                  // 底板不透明度：压得住亮珊瑚，又不至于糊成一条死黑
+    public const float HintPlateAlphaMin = .8f;                // 下限：低于它，背景花纹还剩一大截没压住
+    public const float HintContrastMin = .3f;                  // 底板有效亮度与字色的亮度差下限
+    public const string CanvasHintText = "单击选中 · 双击进表达式 · 拖空白框选 · 右键删除 · Ctrl+滚轮缩放";
+    public static float Luminance(Color c) { return .299f * c.r + .587f * c.g + .114f * c.b; }
+    // 半透明底板压在背景上，实际读到的亮度是「底板色 × 不透明度 + 背景色 × (1 - 不透明度)」。
+    // 背景取最亮那一档（亮粉珊瑚），压过去之后与字色仍要差 ≥HintContrastMin 才算这行字读得清。
+    public static bool HintPlateContrastOk(Color plate, float alpha, Color text, Color bgBrightest)
+    {
+        float p = Luminance(plate) * alpha + Luminance(bgBrightest) * (1f - alpha);
+        return Mathf.Abs(p - Luminance(text)) >= HintContrastMin;
+    }
+    public static bool HintPlateSuppresses(float alpha) { return alpha >= HintPlateAlphaMin; }
+    public static float HintPlateW(float textW, float screenW)
+    {
+        float want = textW > 0f ? textW + 2f * HintPadX : 0f;
+        float max = screenW - 2f * HintEdge;
+        return max > 0f ? Mathf.Min(want, max) : 0f;
+    }
+    public static float HintPlateH(float textH) { return textH > 0f ? textH + 2f * HintPadY : 0f; }
+    // 底板到底盖不盖得住这一行字：横向留出余量、底边不低于文字底边、顶边比文字顶边再高一截。
+    // 三个数都带上限口径（HintPadMin*），所以「底板和文字框一样大」这种没垫板的老写法一律判不过。
+    public static bool HintPlateFits(float textW, float textH, float plateW, float plateH)
+    {
+        if (plateW < textW + HintPadMinX) return false;
+        if (HintPlateBottom > HintTextBottom) return false;
+        return HintPlateBottom + plateH >= HintTextBottom + textH + HintPadMinY;
+    }
 
     PixelText headerLevel;             // 顶栏第二段：章节 · 关卡名
     PixelText traceStep, traceMessage, traceVars;
@@ -175,13 +213,27 @@ public sealed class App : MonoBehaviour
         // 画布底部操作提示：贴画布下沿居中，窗口拉高拉矮都跟着底边走，
         // 再用固定 y 会悬在半空压住卡片（1280x1024 那种偏方比例下实测会）
         // 删除走右键，这行不再写 Delete；剩下的详细操作归「说明书」
-        var hint = Label(CanvasHost, "单击选中 · 双击进表达式 · 拖空白框选 · 右键删除 · Ctrl+滚轮缩放", 10, 648, Theme.WhaleDeep, 2);
+        //
+        // 第十八轮⑤：背景层现在一路铺到画布底边，珊瑚那一层正好压在提示行下面——
+        // r18persona5 截图上「双击进表达式」「拖空白框选」被亮粉花纹啃掉一半，读不出来。
+        // 提示行下面垫一条底板：底色走沙色（和顶栏分隔条同一族），字仍是鲸青深字——
+        // 第一版手滑把底板也刷成鲸青，字和底同色，反而更读不出（取证 crop_r18p6_hint_strip.png），
+        // 所以「底板亮度与字色亮度差 ≥ HintContrastMin」这条也写成纯函数一起自测。
+        var hintSz = PixelText.MeasureString(CanvasHintText, 2);
+        var hintPlate = Panel(CanvasHost, "CanvasHintPlate", 0, 0,
+            HintPlateW(hintSz.x, W), HintPlateH(hintSz.y), Theme.A(Theme.Salt, HintPlateAlpha));
+        hintPlate.GetComponent<Image>().raycastTarget = false;
+        hintPlate.anchorMin = hintPlate.anchorMax = new Vector2(.5f, 0f);
+        hintPlate.pivot = new Vector2(.5f, 0f);
+        hintPlate.anchoredPosition = new Vector2(0f, HintPlateBottom);
+
+        var hint = Label(CanvasHost, CanvasHintText, 10, 648, Theme.WhaleDeep, 2);
         hint.gameObject.name = "CanvasHint";
         hint.raycastTarget = false;
         var hintRt = hint.rectTransform;
         hintRt.anchorMin = hintRt.anchorMax = new Vector2(.5f, 0f);
         hintRt.pivot = new Vector2(.5f, 0f);
-        hintRt.anchoredPosition = new Vector2(0f, 16f);   // 16 = 旧固定坐标在 1440x900 下离底的距离
+        hintRt.anchoredPosition = new Vector2(0f, HintTextBottom);   // 底板比文字上下各多留一截，字才不会被切边
 
         GuideLayer = Child("GuideLayer", root);
         Stretch(GuideLayer);
@@ -1517,6 +1569,12 @@ public sealed class App : MonoBehaviour
     void MenuScenery()
     {
         if (menuBackdrop == null) return;
+        // 激活必须压在本函数里、且在起协程之前：MenuAnimRoutine 的循环条件是 menuBackdrop.activeSelf，
+        // 而 StartCoroutine 会当场同步跑掉第一段（到第一个 yield 为止）。底衬还关着就铺景，
+        // 循环第一次判断就是假，协程立刻结束——气泡、浪、立绘呼吸、两姿势换帧一个都不动，
+        // 第十八轮换素材后拍到的「两张姿势图一模一样」就是这么来的。
+        // 写在这里而不是让调用方去摆先后，是因为谁都可能哪天多接一个入口进来。
+        menuBackdrop.SetActive(true);
         for (int i = menuDeco.Count - 1; i >= 0; i--)
             if (menuDeco[i] != null) Destroy(menuDeco[i].gameObject);
         menuDeco.Clear();
@@ -1571,20 +1629,22 @@ public sealed class App : MonoBehaviour
     // 必须在 MenuShell 之前铺——menuDialog 是 menuBackdrop 后建的子节点，后建的渲染在上，面板才会挡在立绘前面。
     // 画布 1440x900，居中面板 940x600 占 x=250..1190 / y=110..710（距顶）：
     // 于是左右各留一条 250px 的竖廊站 3 号大个，面板下方留一条 190px 的横廊站 2 号小个。
+    // 六家 AI 的 idle / wave 是同一角色的两种姿势（第十八轮换的第三方立绘），每 3 秒一切就是互动；
+    // 大肥鱼沿用 ArtInbox 素材的四帧，eat / idle 交替。
     void MenuPersonaStage()
     {
         if (menuBackdrop == null) return;
         var back = (RectTransform)menuBackdrop.transform;
 
-        PutPersona(back, "dragon", "talk", "wave", 26f, 864f, 3, true, 0.0f);      // 朝右下的舞台递单据
-        PutPersona(back, "claude", "talk", "idle", 1222f, 864f, 3, false, 1.1f);   // 朝左边的 gemini 立规矩
+        PutPersona(back, "dragon", "idle", "wave", 26f, 864f, 3, false, 0.0f);      // 朝右下的舞台递单据
+        PutPersona(back, "claude", "idle", "wave", 1222f, 864f, 3, false, 1.1f);   // 朝左边的 gemini 立规矩
 
-        // 前排两两相对：talk 帧画的是朝左递东西，所以站左边那位要 flipX 才朝向右边那位
+        // 前排两两相对：立绘本身多是正面，靠 flipX 决定这一位朝向同伴还是背对同伴
         float fx = 376f;
         PutPersona(back, "dayu", "eat", "idle", fx, 876f, 2, true, 0.4f); fx += 140f;
-        PutPersona(back, "gemini", "wave", "talk", fx, 876f, 2, false, 1.6f); fx += 140f;
-        PutPersona(back, "doubao", "wave", "talk", fx, 876f, 2, true, 0.9f); fx += 140f;
-        PutPersona(back, "grok", "talk", "wave", fx, 876f, 2, false, 2.2f); fx += 140f;
+        PutPersona(back, "gemini", "idle", "wave", fx, 876f, 2, false, 1.6f); fx += 140f;
+        PutPersona(back, "doubao", "idle", "wave", fx, 876f, 2, true, 0.9f); fx += 140f;
+        PutPersona(back, "grok", "idle", "wave", fx, 876f, 2, false, 2.2f); fx += 140f;
         PutPersona(back, "qianwen", "idle", "wave", fx, 876f, 2, false, 1.3f);
     }
 
@@ -1831,7 +1891,7 @@ public sealed class App : MonoBehaviour
         SaveSystem.Flush();
         SaveProgressMeta();
         VerdictFx.StopAll();                 // 特效层挂在 uiRoot 最上面，不收会在主菜单头顶继续撒彩带
-        MenuScenery();                       // 先把海底铺好，弹窗才是最后一层
+        MenuScenery();                       // 先把海底铺好，弹窗才是最后一层（底衬由它自己点亮，见该函数）
         MenuPersonaStage();                  // 立绘也铺在弹窗后面，必须赶在 MenuShell 之前挂
         float w = MenuDialogW, h = MenuDialogH;
         var d = MenuShell(w, h);
@@ -1901,7 +1961,6 @@ public sealed class App : MonoBehaviour
         var close = PixelButton.Create(d, "关闭", HideMenu, 0, 24);
         close.Rect.anchoredPosition = new Vector2(w - close.Rect.sizeDelta.x - 12f, -12f);
         if (menuRectDump) RectLog("菜单按钮 关闭", close.Rect);
-        if (menuBackdrop != null) menuBackdrop.SetActive(true);
         mainMenuUp = true;                     // 之后从这儿点开的弹窗，「关闭」要能回到主菜单
         Debug.Log("[menu] 主菜单打开，进度 " + cleared + "/" + Levels.All.Count);
     }
@@ -2108,6 +2167,8 @@ public sealed class App : MonoBehaviour
         }
         var creditChip = PixelButton.Create(d, "素材来源", () => JumpManualGroup("素材来源"), 0, 22);
         creditChip.Rect.anchoredPosition = new Vector2(cx, -60f);
+        // 验收要直接点到这一页：整份素材台账在文末，靠滚轮滚过去既慢又受每档步长影响，落点不稳
+        if (menuRectDump) RectLog("说明书分组 素材来源", creditChip.Rect);
 
         float vpY = 92f, vpH = h - vpY - 14f;
         var vp = Panel(d, "ManualView", 14, vpY, w - 30f, vpH, new Color(0, 0, 0, 0));
@@ -2148,7 +2209,14 @@ public sealed class App : MonoBehaviour
     void JumpManualGroup(string g)
     {
         float vy;
-        if (manualScroll != null && manualGroupY.TryGetValue(g, out vy)) manualScroll.ScrollTo(vy);
+        if (manualScroll == null || !manualGroupY.TryGetValue(g, out vy))
+        {
+            Debug.Log("[manual] 跳转失败 " + g);
+            return;
+        }
+        manualScroll.ScrollTo(vy);
+        // 报「跳到哪、实际停在哪儿」：验收点分组芯片时要有日志可等，否则一发鼠标丢在后台就查不出来
+        Debug.Log("[manual] 跳转 " + g + " 目标 " + vy + " 实停 " + manualScroll.Offset);
     }
 
     float ManualGroupHead(RectTransform parent, string title, float y, float w)
@@ -2214,9 +2282,9 @@ public sealed class App : MonoBehaviour
     {
         "主角形象为第三方同人作品：原型@上善无形 · 女仆版@ZipZipPipe · 动画@Small-tailqwq · CC BY-NC-SA 4.0 非商业",
         "关底出现的各家 AI 形象均为同人虚构，与对应厂商无关",
-        "各家 AI 拟人的像素立绘由 tools/gen_personas.py 程序自绘，不含任何第三方形象素材",
+        "各家 AI 拟人立绘为第三方同人作品：ZipZipPipe《AI 娘化》系列 · 署名 ZipZipPipe · 非商业",
         "音效全部由 tools/gen_sfx.py 程序合成，未使用第三方音频素材",
-        "关卡背景条由 tools/gen_art.py 程序绘制，配色取自本作的 16 色像素色板",
+        "画布背景为第三方像素素材：CraftPix.net《Underwater World》· OGA-BY 3.0 署名",
     };
 
     float ManualCreditsBlock(RectTransform parent, float y, float w)
@@ -2481,6 +2549,10 @@ public sealed class App : MonoBehaviour
     Coroutine inspectorSlideCo;
 
     public bool InspectorCollapsed { get { return inspectorCollapsed; } }
+
+    // 画布要不要按「只读预览」对待：正在看标准答案时，复制/粘贴一律拒（GraphView.PreviewBlocksClipboard）。
+    // 提交与自动存档早就看这个状态（见 previewAnswer 那两处闸门），这里只是把同一件事对画布编辑也说出来。
+    public bool AnswerPreview { get { return previewAnswer; } }
 
     // 当前题栏实际宽度：收起 = 0。题面折行、视口尺寸都按这个走，不再用常量 330。
     public float InspectorWidthNow { get { return InspectorWidthFor(inspectorCollapsed); } }

@@ -18,6 +18,7 @@ namespace Dayu.EditorTools
             DegenerateTextWidths(ref total, ref passed);
             CaptionInsideDialog(ref total, ref passed);
             CastStripFits(ref total, ref passed);
+            SceneryActivatesBeforeAnimRoutine(ref total, ref passed);
         }
 
         // ---------------- 两栏横向不相交 ----------------
@@ -110,6 +111,85 @@ namespace Dayu.EditorTools
                     w <= App.CastSlotW - 4f, true);
             }
             Check(ref total, ref passed, "出场名单字符全在图集里", missing.ToString(), "");
+        }
+
+        // ---------------- 底衬点亮必须在起协程之前（第十八轮④） ----------------
+        //
+        // MenuAnimRoutine 的循环条件是 menuBackdrop.activeSelf，而 Unity 的 StartCoroutine 会当场同步
+        // 执行到第一个 yield 为止——也就是循环条件在启动那一刻就被判一次。底衬还关着就起协程，第一次判断
+        // 即为假，协程当场结束，主菜单的气泡 / 浪 / 立绘呼吸 / 每 3 秒换姿势全都不会动一帧。
+        // 这个缺陷从第十七轮舞台落地起就存在，r17 的截图验收没看出来（截图本来就不动），第十八轮换素材时
+        // 拿两张不同时刻的姿势图对比才撞破。它不是「数字算错」，是「两句代码的先后」，所以这里直接读
+        // App.cs 源文本按大括号配对抠出方法体，断言两句的顺序；配三条负对照（反序 / 缺一句 / 找不到方法），
+        // 否则「顺序对」这三个字就是自证空话。
+
+        const string Activate = "menuBackdrop.SetActive(true)";
+        const string StartAnim = "StartCoroutine(MenuAnimRoutine())";
+
+        static void SceneryActivatesBeforeAnimRoutine(ref int total, ref int passed)
+        {
+            string src = System.IO.File.ReadAllText(
+                System.IO.Path.Combine(Application.dataPath, "Scripts", "UI", "App.cs"));
+            Check(ref total, ref passed, "App.cs 源文件读到了（" + src.Length + " 字符）",
+                src.Length > 100000, true);
+
+            string scenery = BodyOf(src, "void MenuScenery()");
+            Check(ref total, ref passed, "MenuScenery 方法体抠到了", scenery != null, true);
+            Check(ref total, ref passed, "MenuScenery 里点亮底衬排在起协程之前",
+                OrderName(OrderOf(scenery, Activate, StartAnim)), "顺序对");
+
+            // 负对照①：同一对句子写反顺序，判「顺序反了」
+            Check(ref total, ref passed, "反序判为不合规（负对照）",
+                OrderName(OrderOf("{ " + StartAnim + "; " + Activate + "; }", Activate, StartAnim)), "顺序反了");
+            // 负对照②：体里根本没有点亮那一句，判「找不到句子」——当年 ShowMainMenu 就是这个形态，
+            // 协程在关着的底衬上起，屏幕上看不出任何异常
+            Check(ref total, ref passed, "缺点亮那一句判为找不到（负对照）",
+                OrderName(OrderOf("{ " + StartAnim + "; }", Activate, StartAnim)), "找不到句子");
+            // 负对照③：签名压根不存在，BodyOf 返回 null，同样判「找不到句子」，不会误报成合规
+            Check(ref total, ref passed, "方法名写错时不误报合规（负对照）",
+                OrderName(OrderOf(BodyOf(src, "void NoSuchMethod()"), Activate, StartAnim)), "找不到句子");
+
+            // 先后只留一处：ShowMainMenu 不再自己点亮底衬，避免两个地方各写一遍、改一处漏一处
+            string menu = BodyOf(src, "void ShowMainMenu()");
+            Check(ref total, ref passed, "ShowMainMenu 里不再重复点亮底衬",
+                OrderName(OrderOf(menu, Activate, StartAnim)), "找不到句子");
+        }
+
+        static string OrderName(int v)
+        {
+            return v < 0 ? "找不到句子" : v == 0 ? "顺序反了" : "顺序对";
+        }
+
+        // 按大括号配对从源文本里抠出一个方法体（含最外层那对括号）；签名找不到或括号配不上就返回 null。
+        static string BodyOf(string src, string signature)
+        {
+            if (src == null) return null;
+            int at = src.IndexOf(signature, System.StringComparison.Ordinal);
+            if (at < 0) return null;
+            int open = src.IndexOf('{', at);
+            if (open < 0) return null;
+            int depth = 0;
+            for (int i = open; i < src.Length; i++)
+            {
+                char c = src[i];
+                if (c == '{') depth++;
+                else if (c == '}')
+                {
+                    depth--;
+                    if (depth == 0) return src.Substring(open, i - open + 1);
+                }
+            }
+            return null;
+        }
+
+        // 两句代码的先后：-1 = 体为 null 或至少一句不在体里，0 = 反了，1 = 前一句确实在后一句之前。
+        static int OrderOf(string body, string before, string after)
+        {
+            if (body == null) return -1;
+            int a = body.IndexOf(before, System.StringComparison.Ordinal);
+            int b = body.IndexOf(after, System.StringComparison.Ordinal);
+            if (a < 0 || b < 0) return -1;
+            return a < b ? 1 : 0;
         }
 
         static void Expect(ref int total, ref int passed, string label, float actual, float want)

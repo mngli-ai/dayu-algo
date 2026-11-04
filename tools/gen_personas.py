@@ -21,6 +21,9 @@ from __future__ import annotations
     Evidence/r17/personas_sheet.png              全部帧总表
 
 确定性：没有随机源（舞台图用固定种子），同机重跑逐字节一致。
+
+【第十八轮起停用】六家 AI 的立绘已换成网上搜集的第三方同人件，转换脚本是
+tools/gen_personas_from_photo.py；本脚本默认拒绝运行，详见 main() 的闸门注释。
 """
 import json
 import math
@@ -1003,6 +1006,14 @@ def sheet(manifest):
 
 
 def main():
+    # 第十八轮玩家明令「以后不要再自己画角色，必须用网上搜集的现成素材」。
+    # 六家 AI 的立绘已换成 ZipZipPipe 的第三方同人件（登记见 ArtInbox/SOURCES.md §十），
+    # 这套自绘件只剩历史参考价值。留着不加闸门的话，误跑一次就会把游戏里的立绘刷回旧样式，
+    # 所以要跑必须显式带 --legacy。
+    if "--legacy" not in sys.argv:
+        print("[gen_personas] 已停用：角色立绘改用 tools/gen_personas_from_photo.py（第三方素材转换）。"
+              "确实要重跑这批自绘件，加 --legacy。")
+        return 1
     EV.mkdir(parents=True, exist_ok=True)
     man = write_all()
     n = sum(len(v["actions"]) + 1 for v in man.values())

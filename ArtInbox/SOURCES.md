@@ -145,6 +145,12 @@
 > 本节只追加，不改动上方 §一~§七 的任何既有条目与结论。
 
 ### 15. `Assets/Art/Personas/**` + `Assets/Resources/Personas/**`（7 位 AI 拟人的像素立绘/头像，共 29 张 PNG）★自绘原创
+> **【2026-11-04 第十八轮：本节六家 AI 的自绘件已被 §十 的第三方素材整批取代】**
+> 玩家反馈「角色画得太丑，以后不要再自己画了，必须去网上找别人画好的素材」。
+> `dragon/claude/gemini/qianwen/grok/doubao` 的 24 张 PNG 已换成 §十 条目 19 的转换产物；
+> 本节保留的口径只适用于仍在用的 `dayu_*`（大肥鱼，来自 §一条目 1/6/8 的鲸鱼娘素材）。
+> 自绘生成器 `tools/gen_personas.py` 已加闸门：不带 `--legacy` 直接拒绝运行，防止误跑刷回旧样式。
+
 - 来源：**本仓库自产**。由 `tools/gen_personas.py`（Python 3 + Pillow，确定性整数格绘制，固定色板）逐像素生成，脚本即源文件，可重复运行 `C:/ProgramData/anaconda3/python tools/gen_personas.py` 完整复现同一批图。
 - 许可：**程序自绘原创，无第三方素材依赖，不含任何网络下载件、不临摹任何官方或社区成图** → 这部分美术随项目非商业发布时**无需额外署名链，也不受 CC BY-NC-SA 约束**。若日后本项目要商用，本节条目本身可用（仍属原创），但见下方「整体限制」。
 - 排查依据（为什么走自绘而不是找现成像素素材）：检索过 OpenAI / Google / DeepSeek 等各家品牌资产页与 itch.io / Kenney 等 CC0 像素包 —— **没有任何一家发布过可商用的官方拟人像素素材**；CC0 包里只有通用像素件、不含 AI 角色；社区的「AI 娘」图全部是二创（CC BY-NC-SA 或授权不明），萌娘百科的说明文字本身也是 BY-NC-SA。故只能自绘原创演绎。
@@ -153,4 +159,98 @@
 - 规格：立绘帧 64×80、头像 32×32，七角色严格同尺寸；统一使用项目 16 色板（同 `Assets/Scripts/UI/Theme.cs` / `tools/gen_art.py` 的 PALETTE），1px 描边 `#38515B`，alpha 仅 0/255，无抗锯齿，**画面内不含任何文字**（中文由位图字体渲染）。
 - 运行时入口：`Assets/Scripts/UI/Personas.cs`（`Personas.Face/Frame/ActionsFor/Has/KeyForDisplayName/Keys`），加载失败只 `Debug.LogWarning` 一次并返回 null，不抛异常。
 - **整体限制（重要，指回既有条目）**：本节条目自身是原创、可自由使用；但**本仓库整体**仍含 §一~§七 的第三方 CC BY-NC-SA 素材（`Assets/Resources/Hero/` 的四件衍生件即来自条目 1/6/8），所以项目整体口径不变——**在任何商业化前，仍须按 §六.4 与 §头部「2026-11-03 补充（商用口径）」换掉鲸鱼娘形象或取得书面授权**；页脚署名（`App.cs` 的 `BuildFooter()`）与「各 AI 形象均为同人虚构」免责声明继续保留。自绘形象与第三方形象同框时，页脚署名义务以第三方条目为准。
+
+---
+
+## 九、画布动态背景：免费像素美术资产（2026-11-04 追加，r18 #146）
+
+> 背景：玩家反馈 r17 程序化生成的背景条「都是毛刺，丑丑的」，并明确要求**不要再自己画，去搜集现成素材**。本节即背景美术的搜集结果与美术工作流记录。
+
+### 美术工作流（本轮定稿，后续素材照此走）
+1. **搜集渠道**（按本机可达性实测）：opengameart.org（OGA，可达，许可证标注齐全，首选）→ raw.githubusercontent.com（可达，需逐仓库核授权）→ 萌百 storage.moegirl.org.cn（可达，多为 BY-NC-SA）。**不可达/不用**：itch.io、kenney.nl、pixiv.net（本机被墙）；任何「免费」但授权含糊的站点不碰。
+2. **筛选口径**：只要真像素图（低色数、无抗锯齿、整数格绘制）；许可证只收 CC0 / OGA-BY / CC-BY（署名即可，含商用权）；BY-NC-SA 素材沿用 §头部商用红线；**禁止 AI 生成图与自绘**（玩家明令）。
+3. **登记**：下载原件先落 `ArtInbox/`（不入库），在本表登记来源页 URL、附件直链、作者、许可证、下载日期、是否修改、像素实测数据。
+4. **落盘**：处理脚本（本轮 `tools/gen_backdrop.py`）只做拷贝/裁切/缩放/量化，不重绘；写入 `Assets/Resources/` 后由 `ImportSettings.Apply()` 统一点采样、不压缩、无 mipmap。
+5. **署名**：需要署名的许可证（OGA-BY / CC-BY）在游戏内页脚 `App.cs BuildFooter()` 落一行；NC 素材同时受 §头部商用口径约束。
+
+### 16. `oga_underwater-world-pixel-bg/1..5.png` ★在用（画布背景五层）
+- 来源页：https://opengameart.org/content/underwater-world-pixel-background （OGA 提交者 CraftPix.net，2026-11-04 curl 实测 HTTP 200）
+- 附件直链：https://opengameart.org/sites/default/files/underwater_world_pixel_background.zip
+- 许可：**OGA-BY 3.0**（署名 CraftPix.net，允许商用与再分发，https://opengameart.org/oga-by-30-faq）
+- 下载日期：2026-11-04；修改：**未修改**（`tools/gen_backdrop.py` 原字节拷成 `Assets/Resources/Backdrop/uw_{water,fish,rocks,sand,coral}.png`，md5 与源一致）
+- 实测：五张均 576×324 RGBA 真像素。1.png 全幅不透明水体渐变（4 色）；2.png 鱼群（alpha 包围盒 (51,126)-(517,235)，29 色）；3.png 礁石剪影（y130..324，5 色）；4.png 沙底（y243..324，5 色）；5.png 珊瑚前景（y169..324，14 色）。运行时按镜像瓦片平铺、五档横视差 .04/.08/.12/.20/.30、章节乘色，属显示变换，不改素材字节。
+- 署名落点：`App.cs BuildFooter()` 增「背景美术 CraftPix.net（OGA-BY 3.0）」一行。
+- 包内 `COUPON.pdf/png` 是 CraftPix 折扣券广告，**未拷入 Assets/**。
+
+### 17. `oga_warped-ocean-view/`（备用，未入 Assets）
+- 来源页：https://opengameart.org/content/warped-ocean-view ；作者 Luis Zuno（@ansimuz）
+- 许可：包内 `Ocean View Files/public-license.txt` 明示「personal or commercial projects / modify / re-distribute / credit not required」（OGA 页标 CC0）
+- 下载日期：2026-11-04；状态：**备用未使用**。水面海景风格与「算法深海」主题不合，留作日后章节扩充候选。
+
+### 18. `oga_underwater-world-parallax/`（备用，未入 Assets）
+- 来源页：https://opengameart.org/content/underwater-world-parallax-backgrounds （CraftPix.net）
+- 附件直链：https://opengameart.org/sites/default/files/Underwater-World-Parallax-Game-Backgrounds-PNG.zip
+- 许可：OGA-BY 3.0（同条目 16）
+- 下载日期：2026-11-04；状态：**备用未使用**。四套 1920×1080 分层大图的尺寸与色数都超出需要，条目 16 的 576×324 五层像素颗粒与卡片图标更同档。
+
+### 排查记录（不可用来源）
+- OGA `underwater-fantasy-pixel-art-environment`：页面无附件，原文件外链 itch.io（本机被墙）→ 弃用。
+- 自绘路线：r17 `tools/gen_art.py` 生成的程序化背景条（`Assets/Resources/Props/bg_*.png`）被玩家否决，文件暂留但 `Backdrop.cs` 已不再读取；后续大版本可连同 gen_art.py 的 bg 函数一起清掉。
+
+---
+
+## 十、各家 AI 拟人立绘：第三方同人成图（2026-11-04 追加，r18 #145）
+
+> 背景：玩家看到 r17 自绘的六只像素娘后明令「太丑，以后不要再自己画了，必须去网上找别人画好的素材，
+> 这几个娘都很热门，应该很容易搜到」。本节即该指令的落实结果，并取代 §八 条目 15 的六家自绘件。
+
+### 搜集口径（沿用 §九 工作流，角色美术这一支）
+1. 渠道：pixiv / bilibili 原站本机被墙，改走**已把这些成图原字节收录并逐项登记许可的 GitHub 仓库**
+   `shuaizenge/ai-girls`（raw.githubusercontent.com 可达）。仓库 `NOTICE.md` 核验日期 2026-10-01。
+2. 只取**画师本人公布的成图**，不做任何自绘、不做 AI 生成、不改画角色本身；
+   转换脚本只做抠白底 + 裁切 + 降采样（与 §九 第 4 步同口径：变换不改设计，重绘才算）。
+3. 大文件（5–12 MB）从 raw.githubusercontent 直连常被掐断，用 `curl -C -` 断点续传补全，
+   并以 PIL 能整图无截断解码 + 与 GitHub API 报告的 size 逐字节相符为验收条件。
+
+### 19. `zipzippipe_*.{jpg,png}`（六家 AI 拟人立绘 + 五张另一姿势截帧）★在用
+- 画师：**ZipZipPipe** — Pixiv https://www.pixiv.net/users/18604994 / Bilibili https://space.bilibili.com/4168597 （UID 4168597）
+- 原始作品页：pixiv《AI娘化》 https://www.pixiv.net/artworks/148186519 （高清立绘，每角色一页）；
+  bilibili《大AI和小AI们》 https://www.bilibili.com/video/BV1tE9XBbErS/ （同一套设计的另一姿势，视频截帧）；
+  豆包（Seed）那张来自 https://www.bilibili.com/opus/1236803362705375305 。
+- 收录仓库文件（本地 `ArtInbox/personas/`，未入库）与 sha256：
+
+  | 本地文件 | 仓库内路径 | 尺寸 | sha256 |
+  | --- | --- | --- | --- |
+  | `zipzippipe_dragon.jpg` | `characters/gpt/adult/zipzippipe-pixiv-148186519-p03.jpg` | 3072×5504 | `c47948cd25efcf7ad4a5179288c8452445d57d6dfc379fb27ab6e809a6970157` |
+  | `zipzippipe_claude.jpg` | `characters/claude/adult/zipzippipe-pixiv-148186519-p02.jpg` | 3072×5504 | `6fb3d6568ccd23cea1437226947276ab052bcdd47d6b7d55d8b5ca148c779782` |
+  | `zipzippipe_gemini.jpg` | `characters/gemini/adult/zipzippipe-pixiv-148186519-p04.jpg` | 3072×5504 | `1353cf80c62b1841f0b59671a693aef945a297c586c9ad32f1a36efc5e3e15ab` |
+  | `zipzippipe_qianwen.jpg` | `characters/qwen/adult/zipzippipe-pixiv-148186519-p12.jpg` | 3072×5504 | `3dfe6fafc0531d1bf3fd0a72556c91d53253b377ac52355bb127e54020d55114` |
+  | `zipzippipe_grok.jpg` | `characters/grok/adult/zipzippipe-pixiv-148186519-p07.jpg` | 3072×5504 | `a5a4b4c95f905034b64bf80237f1b859ade0e6e31cadf4db40f9642124e171bb` |
+  | `zipzippipe_doubao.jpg` | `characters/seed/adult/zipzippipe-bilibili-1236803362705375305-p00.jpg` | 3072×5504 | `81b76f71e19ed9f926e32c70f1710b7551e60efdfa858b46a4ee099d16e47847` |
+  | `zipzippipe_gpt_chibi.png` | `characters/gpt/chibi/zipzippipe-BV1tE9XBbErS-23s.png` | 720×1280 | `90606f78f5c8ee76c3547c0df2999ba145cdb50bef25e7fc6a8a6c3ecc4ee4d5` |
+  | `zipzippipe_claude_chibi.png` | `characters/claude/chibi/zipzippipe-BV1tE9XBbErS-17s.png` | 720×1280 | `331eb459d81c0a2f908fccaf8365f137a77098f81f1e145cca5413a1def07c55` |
+  | `zipzippipe_gemini_chibi.png` | `characters/gemini/chibi/zipzippipe-BV1tE9XBbErS-11s.png` | 720×1280 | `d496c4edf07b964e18cce99b007c913237c9d44d1c8088fb84ea83e1972d1364` |
+  | `zipzippipe_qwen_chibi.png` | `characters/qwen/chibi/zipzippipe-BV1tE9XBbErS-53s.png` | 720×1280 | `4f59aee4d8d4fa341a40b68f33d9593708f7eecfcb19c96ad8aa44d9bb844cb9` |
+  | `zipzippipe_grok_chibi.png` | `characters/grok/chibi/zipzippipe-BV1tE9XBbErS-29s.png` | 720×1280 | `2f311320ca878e084ae031b65fbb697d3eb296f4091050a71c33797b78f30235` |
+
+  注：`_chibi` 是仓库对「视频截帧」的目录命名，实测就是同设计的正常比例全身图，不是 Q 版。
+- 许可（照仓库 `NOTICE.md` 原文口径，不擅自升级）：作者在《"亿万"身家的她们》简介说明**图片开放分享、允许用于再创作**；
+  仓库**不统一授予 CC0/MIT 等标准许可证**，其中 DeepSeek 二次设计明确 **CC BY-NC-SA 4.0（不可商用）**。
+  → 本项目为非商业学生作品，可用；**商用红线沿用 §头部**：商用前须换掉这些形象或取得书面授权。
+- 转换：`tools/gen_personas_from_photo.py`（numpy + scipy 向量化）。四步：裁掉传输截断产生的纯灰行 →
+  从四条边泛洪判近白为背景（**只删与边界连通的白**，白裙白袜保住）→ 最大连通域定前景包围盒 →
+  按包围盒高的固定比例裁头区（0.30）与半身框（0.62，宽 = 高 × 64/80），半身框水平位置在「不把头挤出框」的
+  约束内取装下最多前景像素的一档（长柄武器、张开的龙翼不被裁掉）→ LANCZOS 等比降采样 + 硬 alpha(0/255)。
+  比例口径让同一角色的两种姿势在 64×80 里头部像素高度一致，主菜单每 3 秒换姿势不会忽大忽小。
+- 帧分配：`idle` = pixiv 高清立绘；`wave`/`talk` = 视频截帧的另一姿势（同字节）。
+  **豆包只有公开的一张**，三帧同图，舞台上只保留 ±2px 像素呼吸，不换姿势。
+- 落盘：`Assets/Art/Personas/<key>_{face,idle,wave,talk}.png` 与 `Assets/Resources/Personas/` 同名同字节，
+  六角色 × 4 帧 = 24 张，加 `dayu_*` 5 张共 29 张；逐字节一致与缺帧由 `Assets/Editor/PersonaAssetTests.cs` 判红。
+- 署名落点：`App.cs CreditLines` 第三行「各家 AI 拟人立绘为第三方同人作品：ZipZipPipe《AI 娘化》系列 · 署名 ZipZipPipe · 非商业」，
+  进主菜单落款与说明书「素材来源」页。
+- 未采用：`characters/deepseek/**`（与 §一条目 1/6/8 的鲸鱼娘同源，避免同一角色两套设计）、
+  `characters/kimi|glm|mistral|llama|minimax|hunyuan/**`（出场名单里没有这几家）、
+  `characters/doubao/official/doubao-avatar.png`（豆包官方头像，权利归字节跳动，非同人开放素材）。
+
+
 

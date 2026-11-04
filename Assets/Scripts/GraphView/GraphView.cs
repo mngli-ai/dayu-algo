@@ -60,6 +60,10 @@ public sealed class GraphView : MonoBehaviour, IPointerDownHandler, IPointerUpHa
     // 两块样例板钉死在画板上：判题链靠它们取当前样例、对比程序输出，玩家删掉这一关就没法判了。
     // 所以右键删、Delete、框选批量删、复制粘贴都跳过它们；关卡加载时还会自动补齐缺的那块。
     public static bool IsPinned(string type) { return BottomSummary(type); }
+    // 标准答案预览里整张画布是只读的：框选答案 Ctrl+C、退出预览再 Ctrl+V，等于把答案原样抄进自己的图，
+    // 判题照样判过——这条路必须堵死。删和改在预览里本来就不落存档（退出时换回玩家那份），不用拦。
+    public const string PreviewReadOnlyHint = "标准答案预览是只读的：不能复制、不能粘贴，退出预览再动自己的图";
+    public static bool PreviewBlocksClipboard(bool answerPreview) { return answerPreview; }
     static bool HasIdentityLine(string type) { return type != "entry" && !string.IsNullOrEmpty(type) && !BottomSummary(type); }
     // 表达式字段的第一行起点：有身份行时排在它下面，没有就紧贴标题。
     public static float ExprTop(string type) { return HasIdentityLine(type) ? TitleH + IdentityH + 2f : PortRowTop; }
@@ -1338,9 +1342,19 @@ public sealed class GraphView : MonoBehaviour, IPointerDownHandler, IPointerUpHa
         return new GraphLink { FromNode = l.FromNode, FromPort = l.FromPort, ToNode = l.ToNode, ToPort = l.ToPort, Kind = l.Kind };
     }
 
+    // 预览里按了 Ctrl+C / Ctrl+V：一声「不行」的音 + 一条说清为什么的 Toast，不静默吞掉按键。
+    // 返回值必须和「什么都没选中」区分开，否则调用方会再补一条自己的 Toast 把这句顶掉。
+    public const int ClipboardBlocked = -1;
+    void RejectPreviewClipboard()
+    {
+        SoundSystem.Play("error");
+        if (App.I != null) App.I.Toast(PreviewReadOnlyHint);
+    }
+
     // 把当前选中的模块（连同它们之间的连线）抄进剪贴板
     public int CopySelected()
     {
+        if (PreviewBlocksClipboard(App.I != null && App.I.AnswerPreview)) { RejectPreviewClipboard(); return ClipboardBlocked; }
         clipboard.Clear(); clipboardLinks.Clear();
         var picked = new List<string>();
         foreach (var kv in cards) if (kv.Value != null && kv.Value.Selected && kv.Value.gameObject.activeSelf) picked.Add(kv.Key);
@@ -1360,6 +1374,7 @@ public sealed class GraphView : MonoBehaviour, IPointerDownHandler, IPointerUpHa
     // 贴到选中模块的右下方；没有选中就贴到画布中心。贴出来的新块保持选中，方便连着拖。
     public int PasteClipboard()
     {
+        if (PreviewBlocksClipboard(App.I != null && App.I.AnswerPreview)) { RejectPreviewClipboard(); return ClipboardBlocked; }
         if (clipboard.Count == 0) return 0;
         var map = new Dictionary<string, string>();
         foreach (var n in clipboard) map[n.Uid] = "n" + Guid.NewGuid().ToString("N").Substring(0, 8);
@@ -1695,8 +1710,9 @@ public sealed class GraphView : MonoBehaviour, IPointerDownHandler, IPointerUpHa
         bool editingText = ExpressionFieldUI.AnyOpen || NodeParamsUI.IsOpen || ExprEditorUI.IsOpen
             || (focused != null && focused.GetComponent<PixelInputField>() != null);
         if (editingText) return;
-        if (ctrl && Input.GetKeyDown(KeyCode.C)) { int k = CopySelected(); if (App.I != null) App.I.Toast(k > 0 ? "已复制 " + k + " 个模块" : "先选中模块再复制"); return; }
-        if (ctrl && Input.GetKeyDown(KeyCode.V)) { int k = PasteClipboard(); if (App.I != null) App.I.Toast(k > 0 ? "已粘贴 " + k + " 个模块" : "剪贴板是空的"); return; }
+        // 预览里被拦时提示已经由 RejectPreviewClipboard 发过，这里再补一句会把它顶掉，所以先判返回值
+        if (ctrl && Input.GetKeyDown(KeyCode.C)) { int k = CopySelected(); if (k != ClipboardBlocked && App.I != null) App.I.Toast(k > 0 ? "已复制 " + k + " 个模块" : "先选中模块再复制"); return; }
+        if (ctrl && Input.GetKeyDown(KeyCode.V)) { int k = PasteClipboard(); if (k != ClipboardBlocked && App.I != null) App.I.Toast(k > 0 ? "已粘贴 " + k + " 个模块" : "剪贴板是空的"); return; }
         // 撤销/恢复：Ctrl+Z 退一步，Ctrl+Y 与 Ctrl+Shift+Z 进一步；上面 editingText 已经拦住输入框，打字时的 Z 不会被抢
         if (ctrl && (Input.GetKeyDown(KeyCode.Y) || (Input.GetKeyDown(KeyCode.Z)
             && (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift)))))

@@ -320,19 +320,29 @@ def ensure_fore(win):
 def run_steps(drv, win, steps, shots_dir, tag):
     for i, st in enumerate(steps):
         kind = st.get("do")
-        if drv.mode == "cursor" and kind in ("move", "drag", "click", "double", "clickrect", "wheel", "key", "shot"):
+        if drv.mode == "cursor" and kind in ("move", "drag", "click", "double", "clickrect", "wheel", "key", "shot", "wait", "waitlog"):
             # 播放器一失焦就挂起主循环：点击不落地、PrintWindow 拍到黑帧。
             # 只在确实丢了前台时才抢，否则每一步都会把用户的窗口挤下去。
             ensure_fore(win)
         if kind == "wait":
-            time.sleep(float(st.get("sec", 1.0)))
+            # 等待期间也要每 0.25 秒盯一次前台：第十八轮验主菜单两姿势，等 3.2 秒里
+            # 别的窗口把游戏挤到后台，主循环没过帧，两张截图字节完全一样，
+            # 看起来像「换帧没生效」，其实是验收工具自己把游戏停了。
+            left = float(st.get("sec", 1.0))
+            while left > 0:
+                if drv.mode == "cursor":
+                    ensure_fore(win)
+                step = min(.25, left)
+                time.sleep(step)
+                left -= step
         elif kind == "waitlog":
             # 游戏从进程启动到第一帧要几秒，每次冷启动还不一样；用固定 wait 去卡
             # 一段 0.22 秒的补间必然对不上。让程序自己往日志里报「这个状态已经稳了」，
             # 截图等到那一行出现才拍，时序就跟机器快慢无关了。
             # optional：探测类步骤（「这个点到底收不收得到鼠标事件」）要一次跑完好几个候选点，
             # 中间某次没等到是结果而不是故障，不能让整个场景在这里断掉。
-            if not wait_log(st["marker"], float(st.get("timeout", 90.0))):
+            keep = (lambda: ensure_fore(win)) if drv.mode == "cursor" else None
+            if not wait_log(st["marker"], float(st.get("timeout", 90.0)), keep):
                 if st.get("optional"):
                     print(f"[waitlog] 没等到（可选，继续）：{st['marker']}")
                 else:
@@ -418,14 +428,36 @@ def run_steps(drv, win, steps, shots_dir, tag):
             # dx/dy：卡片行量的是左上角，正好落在边角上（右键命中卡片、左键拖标题带都要往内挪几步）
             at = [at[0] + float(st.get("dx", 0.0)), at[1] + float(st.get("dy", 0.0))]
             print(f"[clickrect] {st['label']} → ({at[0]:.4f}, {at[1]:.4f})")
-            drv.move(*at)
-            time.sleep(0.05)
             btn = st.get("button", "left")
-            for _ in range(2 if st.get("double") else 1):
-                drv.down(btn)
+            # until：点完要等到界面真响应。桌面上有窗口一直在抢前台（本轮实测是「快速设置」和
+            # Obsidian 交替），一发鼠标事件可能整个丢在后台；抢不到前台时干脆不发（否则点进别人
+            # 窗口），发完没反应就重抢前台再发一次。
+            until = st.get("until")
+            tries = int(st.get("tries", 4)) if until else 1
+            done = False
+            for k in range(tries):
+                if not ensure_fore(win):
+                    print(f"[clickrect] 第 {k + 1} 次抢前台失败，这一发鼠标不发出去")
+                    time.sleep(.5)
+                    continue
+                drv.move(*at)
                 time.sleep(0.05)
-                drv.up(btn)
-                time.sleep(0.05)
+                for _ in range(2 if st.get("double") else 1):
+                    drv.down(btn)
+                    time.sleep(0.05)
+                    drv.up(btn)
+                    time.sleep(0.05)
+                if until is None:
+                    done = True
+                    break
+                if wait_log(until, float(st.get("until_timeout", 8.0)),
+                            lambda: ensure_fore(win)):
+                    done = True
+                    break
+                print(f"[clickrect] 第 {k + 1} 次点完没等到 {until}，重抢前台再点一次")
+            if not done:
+                raise SystemExit(f"点了 {tries} 次仍未等到 {until}（按钮 {st['label']}）"
+                                 f"——要么这个按钮没接上，要么前台一直抢不回来")
             time.sleep(float(st.get("after", 0.3)))
         elif kind == "max":
             user32.ShowWindow(win.hwnd, 3)   # SW_MAXIMIZE：模拟玩家点标题栏的放大按钮
@@ -450,7 +482,7 @@ def reset_log_pos():
     LOG_LINE = 0
 
 
-def wait_log(marker, timeout=90.0):
+def wait_log(marker, timeout=90.0, keep=None):
     """轮询玩家日志，等 marker 出现。命中返回 True，超时返回 False。
     位点按「行」推进而不是跳到文件末尾：一次拖拽会连着写 [drag] 起手 / 松手 / [add] 三行，
     按文件末尾推进会把命中行之后的新行整段跳过，后面等第二个标记必然超时（上一轮就是这么误判成「撤销没生效」）。"""
@@ -463,6 +495,10 @@ def wait_log(marker, timeout=90.0):
                 LOG_LINE = i + 1
                 print(f"[waitlog] 等到：{marker}")
                 return True
+        # keep=盯住前台：游戏一失焦就挂起主循环，日志自然不再往前写，
+        # 不盯的话「等不到标记」是工具把游戏挤到后台造成的，不是游戏坏了。
+        if keep is not None:
+            keep()
         time.sleep(0.2)
     return False
 

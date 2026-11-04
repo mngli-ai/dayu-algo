@@ -1,0 +1,21 @@
+{
+  "args": ["-menu", "-menurect", "-screen-width", "1440", "-screen-height", "900", "-screen-fullscreen", "0"],
+  "steps": [
+    { "do": "waitlog", "marker": "[menu] 主菜单打开", "timeout": 90 },
+    { "do": "wait", "sec": 1.0 },
+    { "do": "shot", "name": "menu_pose_a" },
+    { "do": "wait", "sec": 3.2 },
+    { "do": "shot", "name": "menu_pose_b" },
+    { "do": "clickrect", "label": "菜单按钮 说明书", "until": "[manual] 条目" },
+    { "do": "wait", "sec": 0.8 },
+    { "do": "clickrect", "label": "说明书分组 素材来源", "until": "[manual] 跳转 素材来源", "after": 0.9 },
+    { "do": "shot", "name": "manual_credits" },
+    { "do": "clickrect", "label": "菜单按钮 关闭", "until": "[menu] 主菜单打开" },
+    { "do": "wait", "sec": 1.0 },
+    { "do": "shot", "name": "menu_pose_c" },
+    { "do": "clickrect", "label": "菜单按钮 选择关卡", "until": "[menu] 关卡选择打开" },
+    { "do": "clickrect", "label": "进入按钮 P3", "until": "[level] P3", "tries": 3 },
+    { "do": "wait", "sec": 1.5 },
+    { "do": "shot", "name": "level_p3_faces" }
+  ]
+}

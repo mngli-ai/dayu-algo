@@ -18,6 +18,7 @@ namespace Dayu.EditorTools
             FocusKey(ref n, ref ok);
             PopupFocus(ref n, ref ok);
             AnswerGate(ref n, ref ok);
+            PreviewClipboardGate(ref n, ref ok);
             AutoSaveSwitch(ref n, ref ok);
             MetaAccounting(ref n, ref ok);
             MetaRoundTrip(ref n, ref ok);
@@ -129,6 +130,46 @@ namespace Dayu.EditorTools
             Case(ref n, ref ok, "调试开关确实是常量 true", SaveFlow.DebugAnswerAlwaysOpen, "改成 false 才能发版");
             Case(ref n, ref ok, "阈值不是随手能撞到的数", SaveFlow.AnswerUnlockFailures >= 2 && SaveFlow.AnswerUnlockFailures <= 10,
                  "阈值 " + SaveFlow.AnswerUnlockFailures);
+        }
+
+        // ---------------- 预览里画布只读 ----------------
+        // 玩家指出的漏洞：进「查看标准答案」→ 框选整张答案 → Ctrl+C → 退出预览 → Ctrl+V，
+        // 答案就原样落进自己的图，判题照样判过。复制与粘贴必须在预览里一起拒。
+
+        static void PreviewClipboardGate(ref int n, ref int ok)
+        {
+            Case(ref n, ref ok, "预览里剪贴板一律拦", GraphView.PreviewBlocksClipboard(true), "");
+            Case(ref n, ref ok, "正常玩法剪贴板放行", !GraphView.PreviewBlocksClipboard(false), "");
+            // 负对照：判定必须真跟着状态走。写死 true（正常玩法也复制不了）或写死 false（漏洞没堵）都判不合格
+            Case(ref n, ref ok, "判定跟着预览状态走，不是写死的",
+                 GraphView.PreviewBlocksClipboard(true) != GraphView.PreviewBlocksClipboard(false), "");
+
+            // 被拦时的返回值必须和「什么都没选中」的 0 分开：键盘入口拿到 0 会补一条自己的提示
+            // （「先选中模块再复制」「剪贴板是空的」），正好把「预览只读」这句顶掉，玩家看不出为什么按了没反应。
+            Case(ref n, ref ok, "被拦返回值与「没选中」区分开", GraphView.ClipboardBlocked != 0, "");
+            Case(ref n, ref ok, "被拦返回值是负数", GraphView.ClipboardBlocked < 0,
+                 GraphView.ClipboardBlocked.ToString());
+
+            string hint = GraphView.PreviewReadOnlyHint;
+            Case(ref n, ref ok, "提示非空", !string.IsNullOrEmpty(hint), hint ?? "");
+            Case(ref n, ref ok, "提示说清了不能复制", hint != null && hint.Contains("不能复制"), hint ?? "");
+            Case(ref n, ref ok, "提示说清了不能粘贴", hint != null && hint.Contains("不能粘贴"), hint ?? "");
+            Case(ref n, ref ok, "提示给了出路（退出预览）", hint != null && hint.Contains("退出预览"), hint ?? "");
+
+            PixelText.EnsureAtlas();
+            // 图集没加载时 MeasureString 全返回 0，宽度与缺字断言都会变成假绿，所以先确认图集真的起来了
+            Case(ref n, ref ok, "字体图集已加载", GlyphAtlas.Texture != null && PixelText.MeasureString("栈", 2).x > 0f, "");
+            var missing = new System.Text.StringBuilder();
+            foreach (var c in hint ?? "")
+                if (c != ' ' && !GlyphAtlas.TryGet(c, out _)) missing.Append(c);
+            Case(ref n, ref ok, "预览提示的字符全在字体图集里", missing.Length == 0, "缺字：" + missing);
+            float w = PixelText.MeasureString(hint ?? "", 2).x;
+            Case(ref n, ref ok, "预览提示一行放得下（Toast 不折行）", w <= App.ToastLineW,
+                 "实测 " + Mathf.CeilToInt(w) + "/" + App.ToastLineW + "px");
+            // 常驻板那条提示走的是同一个 Toast，顺手一起盯，别只盯新加的这条
+            float pw = PixelText.MeasureString(GraphView.PinnedHint, 2).x;
+            Case(ref n, ref ok, "常驻板提示一行也放得下", pw <= App.ToastLineW,
+                 "实测 " + Mathf.CeilToInt(pw) + "/" + App.ToastLineW + "px");
         }
 
         static void AutoSaveSwitch(ref int n, ref int ok)

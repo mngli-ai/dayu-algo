@@ -23,6 +23,14 @@ public static class ImportSettings
             var path = AssetDatabase.GUIDToAssetPath(guid);
             Fix(path, false);
         }
+        // r18 水下背景 5 层：第三方真像素图（CraftPix OGA-BY 3.0），点采样、不压缩、不缩放
+        if (AssetDatabase.IsValidFolder("Assets/Resources/Backdrop"))
+        {
+            foreach (var guid in AssetDatabase.FindAssets("t:Texture2D", new[] { "Assets/Resources/Backdrop" }))
+            {
+                Fix(AssetDatabase.GUIDToAssetPath(guid), false);
+            }
+        }
         foreach (var dir in new[] { "Assets/Art/ModuleIcons", "Assets/Resources/ModuleIcons" })
         {
             if (!AssetDatabase.IsValidFolder(dir)) continue;

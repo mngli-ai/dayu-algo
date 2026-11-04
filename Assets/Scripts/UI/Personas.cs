@@ -2,10 +2,11 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-// 各家 AI 拟人的像素立绘加载器（第十七轮）。
+// 各家 AI 拟人的像素立绘加载器（第十七轮建，第十八轮换素材）。
 //
-// 形象来源：全部由 tools/gen_personas.py 程序自绘原创，逐像素搭建，不依赖、不临摹任何第三方素材；
-// 许可与登记口径见 ArtInbox/SOURCES.md 末尾「程序自绘形象」条目。
+// 形象来源：六家 AI 拟人立绘为第三方同人作品（ZipZipPipe《AI 娘化》系列，署名与许可口径见
+// ArtInbox/SOURCES.md「拟人立绘」条目）；由 tools/gen_personas_from_photo.py 自白底原图抠图、
+// 降采样成游戏帧，不做任何自绘或 AI 生成。主角大肥鱼仍用 ArtInbox 既有鲸鱼娘素材。
 // 资源位置：Assets/Resources/Personas/<key>_<action>.png（源件同尺寸同字节放在 Assets/Art/Personas/）。
 // 尺寸口径：立绘帧 64x80、头像 32x32，所有角色严格一致，可以直接并排摆舞台。
 //

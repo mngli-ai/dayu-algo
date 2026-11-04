@@ -1,0 +1,21 @@
+{
+  "args": ["-level", "L1", "-screen-width", "1440", "-screen-height", "900", "-screen-fullscreen", "0"],
+  "steps": [
+    { "do": "waitlog", "marker": "[level] L1", "timeout": 90 },
+    { "do": "wait", "sec": 2.5 },
+    { "do": "shot", "name": "before_preview" },
+
+    { "do": "key", "name": "f9", "after": 0.5 },
+    { "do": "waitlog", "marker": "[rectdump] #1", "timeout": 20 },
+
+    { "do": "clickrect", "label": "答案按钮", "after": 1.2 },
+    { "do": "waitlog", "marker": "[answer] L1 预览标准答案", "timeout": 20 },
+    { "do": "wait", "sec": 1.0 },
+    { "do": "shot", "name": "preview_entered" },
+
+    { "do": "key", "name": "f9", "after": 0.5 },
+    { "do": "waitlog", "marker": "[rectdump] #2", "timeout": 20 },
+    { "do": "wait", "sec": 0.8 },
+    { "do": "shot", "name": "preview_measured" }
+  ]
+}

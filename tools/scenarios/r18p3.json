@@ -1,0 +1,8 @@
+{
+  "args": ["-level", "P3", "-screen-width", "1440", "-screen-height", "900", "-screen-fullscreen", "0"],
+  "steps": [
+    { "do": "waitlog", "marker": "[level] P3", "timeout": 90 },
+    { "do": "wait", "sec": 1.5 },
+    { "do": "shot", "name": "level_p3_faces" }
+  ]
+}

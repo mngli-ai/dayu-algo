@@ -1,0 +1,16 @@
+{
+  "args": ["-menu", "-menurect", "-screen-width", "1440", "-screen-height", "900", "-screen-fullscreen", "0"],
+  "steps": [
+    { "do": "waitlog", "marker": "[menu] 主菜单打开", "timeout": 90 },
+    { "do": "wait", "sec": 1.0 },
+    { "do": "shot", "name": "menu_pose_a" },
+    { "do": "wait", "sec": 3.2 },
+    { "do": "shot", "name": "menu_pose_b" },
+    { "do": "wait", "sec": 3.0 },
+    { "do": "shot", "name": "menu_pose_c" },
+    { "do": "clickrect", "label": "菜单按钮 选择关卡", "until": "[menu] 关卡选择打开", "tries": 6, "until_timeout": 12 },
+    { "do": "clickrect", "label": "进入按钮 P3", "until": "[level] P3", "tries": 6, "until_timeout": 12 },
+    { "do": "wait", "sec": 1.5 },
+    { "do": "shot", "name": "level_p3_faces" }
+  ]
+}
