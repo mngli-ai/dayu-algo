@@ -94,28 +94,79 @@ def selected_names():
     return [n for n in REQUIRED + OPTIONAL if os.path.exists(os.path.join(BUILD, n))]
 
 
-def newest_mtime(names):
+def is_pack_junk(rel):
+    """`-shot` 的输出目录就是玩家包自己的目录，验收截图因此会躺在 dayu_Data 顶层。
+
+    两个方向都坏：发出去等于给玩家塞几张开发截图；更坏的是它会顶掉新鲜度闸门里
+    「包内最新文件」那一个——实测第十八轮 `--check-only` 报的是 r18level.png 的 15:21，
+    而本轮真正的 Assembly-CSharp.dll 是 15:09，旧包能被一张截图判成刚构建的。
+    只排 dayu_Data **顶层**的 png 和以 `-` 开头的怪名字（后者是 `-shot` 后面跟错参数留下的截图）；
+    子目录里的 png 是玩家包的真资源，一律不动。
+    """
+    parts = rel.split("/")
+    if len(parts) != 2 or parts[0] != "dayu_Data":
+        return False
+    name = parts[1]
+    return name.lower().endswith(".png") or name.startswith("-")
+
+
+def pack_files():
+    """真正进包的文件（相对 Build/，posix 分隔）。打包、新鲜度闸门、正文构建时间三处共用这一份，
+    省得哪一处忘了过滤又各算各的。"""
+    for name in selected_names():
+        top = os.path.join(BUILD, name)
+        if os.path.isfile(top):
+            yield name.replace("\\", "/")
+            continue
+        for dirpath, _, filenames in os.walk(top):
+            for f in filenames:
+                rel = os.path.relpath(os.path.join(dirpath, f), BUILD).replace("\\", "/")
+                if not is_pack_junk(rel):
+                    yield rel
+
+
+def newest_mtime():
     """包内最新一个文件的时间，也就是这一版真正的构建时间。
 
     不能拿 Build/dayu.exe 的时间戳当构建时间：它是 Unity 的玩家模板，增量构建改的是
     dayu_Data/Managed/*.dll 和 dayu_Data/Resources/*，exe 本身原地不动（实测停在 2026-10-29，
     而同一批 DLL 是当天凌晨的）。用它判新鲜度会把刚构建的包判成旧的，
     反过来旧 dayu_Data 又能顶着「新 exe」蒙过闸门——两个方向都错。
+    验收截图同理，见 is_pack_junk。
     """
     best, best_path = 0.0, ""
-    for name in names:
-        top = os.path.join(BUILD, name)
-        if os.path.isfile(top):
-            t = os.path.getmtime(top)
-            if t >= best:
-                best, best_path = t, name
-            continue
-        for dirpath, _, filenames in os.walk(top):
-            for f in filenames:
-                t = os.path.getmtime(os.path.join(dirpath, f))
-                if t >= best:
-                    best, best_path = t, os.path.relpath(os.path.join(dirpath, f), BUILD)
+    for rel in pack_files():
+        t = os.path.getmtime(os.path.join(BUILD, rel.replace("/", os.sep)))
+        if t >= best:
+            best, best_path = t, rel
     return best, best_path
+
+
+def selftest():
+    """不联网、不碰 Build/，只验纯函数与「三处共用一份清单」这件事。"""
+    cases = [
+        ("dayu_Data/current.png", True),
+        ("dayu_Data/r18level.png", True),
+        ("dayu_Data/-screen-width", True),
+        ("dayu_Data/Managed/Assembly-CSharp.dll", False),
+        ("dayu_Data/Resources/tar.jsg", False),
+        ("dayu_Data/globalgamemanagers", False),
+        ("dayu_Data/Managed/current.png", False),
+        ("dayu.exe", False),
+        ("MonoBleedingEdge/etc/mono/4.5/mcs.exe", False),
+    ]
+    bad = [rel for rel, want in cases if is_pack_junk(rel) != want]
+    if bad:
+        raise RuntimeError("is_pack_junk 判错：" + "、".join(bad))
+    print("[selftest] is_pack_junk %d 条全过（含「子目录 png 不误排」负对照）" % len(cases))
+    if os.path.isdir(BUILD):
+        rels = list(pack_files())
+        leak = [r for r in rels if is_pack_junk(r)]
+        if leak:
+            raise RuntimeError("pack_files 漏了验收截图：" + "、".join(leak))
+        print("[selftest] pack_files %d 个文件，无一命中排除项" % len(rels))
+    else:
+        print("[selftest] Build/ 不在，跳过清单核对")
 
 
 def build_zip(zip_path):
@@ -124,23 +175,19 @@ def build_zip(zip_path):
     if os.path.exists(zip_path):
         os.remove(zip_path)
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as z:
-        for name in names:
-            top = os.path.join(BUILD, name)
-            if os.path.isfile(top):
-                z.write(top, name)
-                n_files += 1
-                total += os.path.getsize(top)
-                continue
-            for dirpath, _, filenames in os.walk(top):
-                for f in filenames:
-                    full = os.path.join(dirpath, f)
-                    z.write(full, os.path.relpath(full, BUILD).replace("\\", "/"))
-                    n_files += 1
-                    total += os.path.getsize(full)
+        for rel in pack_files():
+            full = os.path.join(BUILD, rel.replace("/", os.sep))
+            z.write(full, rel)
+            n_files += 1
+            total += os.path.getsize(full)
     size = os.path.getsize(zip_path)
     digest = sha256_file(zip_path)
+    junk_dir = os.path.join(BUILD, "dayu_Data")
+    skipped = sum(1 for f in os.listdir(junk_dir) if is_pack_junk("dayu_Data/" + f)) \
+        if os.path.isdir(junk_dir) else 0
     print("[pack] 入选顶层条目：" + "、".join(names))
-    print("[pack] 文件 %d 个 · 原始 %s · 压缩包 %s" % (n_files, human(total), human(size)))
+    print("[pack] 文件 %d 个 · 排除验收截图 %d 个 · 原始 %s · 压缩包 %s"
+          % (n_files, skipped, human(total), human(size)))
     print("[pack] sha256 " + digest[:16] + "… → " + os.path.basename(zip_path))
     return size, digest
 
@@ -283,10 +330,14 @@ def main():
     ap.add_argument("--tag", help="指定版本号，跳过自动递增")
     ap.add_argument("--min-mtime", help="形如 '2026-11-04 00:00'，包内最新文件比它还旧就拒绝发布")
     ap.add_argument("--zip", default=os.path.join(ROOT, ASSET_NAME))
+    ap.add_argument("--selftest", action="store_true", help="只跑打包口径的确定性断言，不联网不打包")
     args = ap.parse_args()
 
-    names = selected_names()
-    built_ts, newest = newest_mtime(names)
+    if args.selftest:
+        selftest()
+        return
+
+    built_ts, newest = newest_mtime()
     built = time.strftime("%Y-%m-%d %H:%M", time.localtime(built_ts))
     print("[pack] 包内最新文件 %s · 时间 %s" % (newest.replace("\\", "/"), built))
     if args.min_mtime:
@@ -316,7 +367,10 @@ def main():
         "- 压缩包 sha256：" + digest,
         "- 永久最新链接：https://github.com/%s/%s/releases/latest/download/%s" % (OWNER, REPO, ASSET_NAME),
         "",
-        "主角形象为第三方同人素材（CC BY-NC-SA 4.0，非商业），其余画面与音乐均为程序生成。",
+        # 第十八轮：角色立绘与画布背景换成第三方素材，这句「其余画面均为程序生成」已经成假话，
+        # 许可口径改成直接指向台账，免得 release 正文和游戏内署名各说一套。
+        "非商业学习项目。主角与各家 AI 形象立绘、画布背景均为第三方素材（许可与署名见仓库 "
+        "`ArtInbox/SOURCES.md` 与游戏内「说明书 → 素材来源」）；音效、字体与其余画面由程序生成。",
     ])
     note = {"name": "大肥鱼の算法大冒险 " + tag, "body": body}
     ensure_tag_ref(tok, tag, sha)
