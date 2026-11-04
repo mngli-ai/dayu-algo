@@ -2,7 +2,7 @@ using UnityEngine;
 
 // 主角「鲸鱼娘女仆」素材。形象本身是第三方作品（CC BY-NC-SA 4.0），
 // 这里只按 tools/cut_hero.py 从原始动画/立绘里抽帧裁切，不重绘。
-// 署名链见 ArtInbox/SOURCES.md 与游戏内 BuildFooter。
+// 署名链见 ArtInbox/SOURCES.md 与游戏内 App.cs 的 CreditLines。
 public static class HeroAssets
 {
     static PropSpriteSheet idle;

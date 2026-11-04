@@ -2,7 +2,7 @@
 
 把 C++ 算法题画成节点图：拖模块、连线、双击写表达式，一条主链自上而下读下来就是 `main`。做完点「运行」，样例板和隐藏抽查都过了才算通关。
 
-Unity 6 实现，全部界面与美术是运行时用代码装配的像素风 UI，没有预制体也没有场景美术。
+Unity 6 实现。场景文件 `Assets/Scenes/Main.unity` 里只有 `App` 和 `EventSystem` 两个物体，其余界面全是运行时用代码装配的像素风 UI，没有预制体；贴图来自 `Resources/` 下的像素素材（第三方立绘与背景 + 本项目自绘的道具与图标）。
 
 **[下载 Windows 试玩包](https://github.com/mngli-ai/dayu-algo/releases/latest)** · [更新日志](https://github.com/mngli-ai/dayu-algo/releases) — 解压后运行 `dayu.exe`，无需安装。
 
@@ -22,6 +22,7 @@ Unity 6 实现，全部界面与美术是运行时用代码装配的像素风 UI
 | 提交 | 除可见样例外还会跑隐藏抽查用例，全过才解锁下一关 |
 | 说明书 | 顶栏「说明书」随时打开：31 条模块条目 + 30 条操作条目，按 7 个分组翻页，还能跳到对应模块 |
 | 判题反馈 | 单条样例过了撒彩带、整关通过放烟花、答案错了画红叉，每个结论都配一条程序化音效 |
+| 查看标准答案 | 右侧题栏随时打开预览。预览只读：不能提交，也不能复制粘贴——想抄就得先退出预览回到自己的图 |
 
 两块样例板（样例输入板 / 样例对比板）常驻画布，删不掉也不需要自己摆。
 
@@ -51,7 +52,7 @@ Unity 6 实现，全部界面与美术是运行时用代码装配的像素风 UI
 | `Assets/Scripts/Core/` | 图数据模型（`Graph` / `NodeTypes`）、表达式语言与类型检查（`ExprLang`）、编译器（`Compiler`）、虚拟机（`Vm`）、追踪（`Trace`）、C++ 代码生成（`CppGen`）、关卡（`Levels`） |
 | `Assets/Scripts/GraphView/` | 画布、卡片形状绘制、撤销重做历史 |
 | `Assets/Scripts/UI/` | 像素 UI 组件（按钮、输入框、位图文本、面板）、模块栏、检查器、变量浮窗、数组/栈/队列看板、顶栏、存档 |
-| `Assets/Scripts/Art/` | 程序化像素素材、模块图标、精灵动画 |
+| `Assets/Scripts/Art/` | 贴图的加载与切帧（主角、模块图标、道具、精灵动画） |
 | `Assets/Scripts/Text/` | 位图字形图集 |
 | `Assets/Editor/` | 自测入口（`Cli.RunSelfTests`）、命令行打包（`BuildCli.BuildWindows`）、26 个测试类 |
 
@@ -93,12 +94,22 @@ Windows 试玩包在 Releases 里下载，解压直接运行 `dayu.exe`。
 
 ## 授权与署名
 
-游戏主角「溟月」的形象全部来自第三方二创素材，授权为 **CC BY-NC-SA 4.0**，署名链：
+游戏里的画面分四路来源，逐文件的来源页、许可证原文位置、派生参数都在 `ArtInbox/SOURCES.md`，游戏实际用到的产物清单在 `docs/art-assets-manifest.md`。
+
+**主角「溟月」**——第三方二创素材，**CC BY-NC-SA 4.0**，署名链：
 
 1. 上善无形 —— 溟月原型（pixiv 62155430）
 2. ZipZipPipe —— 女仆鲸鱼娘设计（pixiv 18604994）
 3. Small-tailqwq —— 三创再设计（https://github.com/Small-tailqwq/dsh-deep-whale）
 
-逐文件的来源仓库、许可原文位置、派生参数记录在 `ArtInbox/SOURCES.md`，游戏实际用到的产物清单在 `docs/art-assets-manifest.md`。其余道具与图标（木箱、道岔、循环工厂、数组列车、码头）为本项目自绘。
+动画帧另有 ④ FAYER-0610（分层与转发）⑤ PC2005-cloud（dsh-pet 桌宠原作者）。
 
-由于包含 NC-SA 素材，本仓库整体按非商业用途发布：转载、二创需署名上述作者链，并以相同方式共享。代码部分未单独声明开源许可。
+**各家 AI 拟人立绘**（主菜单舞台、出场名单、题栏头像，`Assets/Resources/Personas/` 24 张）——画师 **ZipZipPipe** 的《AI娘化》系列同人成图（pixiv 148186519 与 bilibili《大AI和小AI们》BV1tE9XBbErS 截帧），经已逐项登记许可的收录仓库 `shuaizenge/ai-girls` 原字节取回。作者开放分享、允许再创作，但**不授予标准许可证**，其中 DeepSeek 二次设计明确 CC BY-NC-SA 4.0 → 只可用于非商业项目。项目内只做抠白底 / 裁切 / 降采样，未画一笔角色本身。
+
+**画布动态背景**（`Assets/Resources/Backdrop/` 五层，576×324 真像素）——**CraftPix.net**《Underwater World Pixel Background》，许可证 **OGA-BY 3.0**（署名 CraftPix.net，允许商用与再分发），来源页 https://opengameart.org/content/underwater-world-pixel-background 。原字节拷贝，未修改。
+
+**中文字形**——画面里的每个汉字都是位图图集 `Assets/Resources/atlas.png`，图集由工具期调用第三方像素字体 **TakWolf《Fusion Pixel Font》**（`Assets/Art/Font/fusion-pixel-12px.ttf`）栅格化生成，许可证 **SIL Open Font License 1.1**，原文已入库为 `docs/licenses/fusion-pixel-12px-OFL.txt`。字体本体不进玩家包，玩家包内只有生成的位图。
+
+**本项目自绘 / 自产**：道具、车厢、箱体、模块小图标、彩带与特效、全部音效（`tools/gen_sfx.py` 合成，无第三方音源），以及「大肥鱼」这一只主角像素形象（原创演绎，不基于任何第三方成图）。
+
+由于包含 NC 与 NC-SA 素材，本仓库整体按非商业用途发布：转载、二创需署名上述作者链，并以相同方式共享。代码部分未单独声明开源许可。**要商用必须先换掉主角与各家拟人形象**（背景与字体这两路本身可商用）。

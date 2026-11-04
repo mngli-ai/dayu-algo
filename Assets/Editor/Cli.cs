@@ -80,6 +80,7 @@ namespace Dayu.EditorTools
             SamplePinTests.Run(ref n, ref ok);
             ManualCoverageTests.Run(ref n, ref ok);
             PersonaAssetTests.Run(ref n, ref ok);
+            LicenseLedgerTests.Run(ref n, ref ok);
             VerdictFxTests.Run(ref n, ref ok);
             MenuLayoutTests.Run(ref n, ref ok);
             Debug.Log("共 " + n + " 项，通过 " + ok + " 项");

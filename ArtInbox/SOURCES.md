@@ -135,7 +135,7 @@
 补充说明：
 - 上游条目 8 的 webm 用默认参数抽帧会丢掉 alpha（背景压成纯黑），必须显式 `-c:v libvpx-vp9 -pix_fmt yuva420p`。
 - 48×48 是从 272px 净高一次性 LANCZOS 降采样，属于**制作期**缩放；运行时按 44/48 双线性显示，`ImportSettings` 对 `Assets/Resources/Hero` 用 Bilinear（其余像素资源仍 Point）。条目 §六.3 说的「禁止非整数缩放」针对的是车厢等横向拼接件，角色单精灵不受限。
-- 游戏内署名见 `App.cs` 的 `BuildFooter()`；旧自绘搬运鲸鱼 `whale_carry_box_32x32_6f.png` 已从 `PropAssets` 摘掉加载（文件仍在 `Assets/Art/Props`、`Assets/Resources/Props`，未被任何代码引用）。
+- 游戏内署名见 `App.cs` 的 `CreditLines`（登记时误写为 `BuildFooter()`，工程里没有这个函数，第十八轮收尾按实现改正）；旧自绘搬运鲸鱼 `whale_carry_box_32x32_6f.png` 已从 `PropAssets` 摘掉加载（文件仍在 `Assets/Art/Props`、`Assets/Resources/Props`，未被任何代码引用）。
 - `ArtInbox/whale-maid/` 是 FAYER 分层包的重复下载残留（仅 1 个文件、被占用未能删除），与条目 7 同源，可手工删除。
 
 ---
@@ -155,10 +155,10 @@
 - 许可：**程序自绘原创，无第三方素材依赖，不含任何网络下载件、不临摹任何官方或社区成图** → 这部分美术随项目非商业发布时**无需额外署名链，也不受 CC BY-NC-SA 约束**。若日后本项目要商用，本节条目本身可用（仍属原创），但见下方「整体限制」。
 - 排查依据（为什么走自绘而不是找现成像素素材）：检索过 OpenAI / Google / DeepSeek 等各家品牌资产页与 itch.io / Kenney 等 CC0 像素包 —— **没有任何一家发布过可商用的官方拟人像素素材**；CC0 包里只有通用像素件、不含 AI 角色；社区的「AI 娘」图全部是二创（CC BY-NC-SA 或授权不明），萌娘百科的说明文字本身也是 BY-NC-SA。故只能自绘原创演绎。
 - 规避措施：角色设定参考 `Evidence/r16/llm-persona-research.md` 的**文字**性格与口癖（自绘仅取材于公开文字描述，不参照任何成图构图）。尤其主动避开 §一/§六 的女仆鲸鱼娘签名式组合——本节的「大肥鱼」用的是**深蓝短发 + 大白围裙 + 饭碗 + 鲸尾**，**没有**女仆头饰、头鳍耳、蝴蝶结、蓝渐变长发、深蓝白女仆裙、玛丽珍鞋，不与条目 1/6/8 的构图同构。
-- 落盘与一致性：同名同字节双份存放（`Assets/Art/Personas/` 为源件，`Assets/Resources/Personas/` 为 Unity 运行时读取），清单 `Assets/Art/Personas/personas_meta.json`；逐字节一致由 `Evidence/r17/persona_selfcheck.py`（sha256）校验。
+- 落盘与一致性：同名同字节双份存放（`Assets/Art/Personas/` 为源件，`Assets/Resources/Personas/` 为 Unity 运行时读取）；逐字节一致与缺帧现在由 `Assets/Editor/PersonaAssetTests.cs` 在自测里判红。清单文件 `Assets/Art/Personas/personas_meta.json` **已在第十八轮删除**——它记的是自绘件的动作表，换成第三方成图后与 `Personas.cs` 的帧分配重复，两份口径必然漂移。
 - 规格：立绘帧 64×80、头像 32×32，七角色严格同尺寸；统一使用项目 16 色板（同 `Assets/Scripts/UI/Theme.cs` / `tools/gen_art.py` 的 PALETTE），1px 描边 `#38515B`，alpha 仅 0/255，无抗锯齿，**画面内不含任何文字**（中文由位图字体渲染）。
 - 运行时入口：`Assets/Scripts/UI/Personas.cs`（`Personas.Face/Frame/ActionsFor/Has/KeyForDisplayName/Keys`），加载失败只 `Debug.LogWarning` 一次并返回 null，不抛异常。
-- **整体限制（重要，指回既有条目）**：本节条目自身是原创、可自由使用；但**本仓库整体**仍含 §一~§七 的第三方 CC BY-NC-SA 素材（`Assets/Resources/Hero/` 的四件衍生件即来自条目 1/6/8），所以项目整体口径不变——**在任何商业化前，仍须按 §六.4 与 §头部「2026-11-03 补充（商用口径）」换掉鲸鱼娘形象或取得书面授权**；页脚署名（`App.cs` 的 `BuildFooter()`）与「各 AI 形象均为同人虚构」免责声明继续保留。自绘形象与第三方形象同框时，页脚署名义务以第三方条目为准。
+- **整体限制（重要，指回既有条目）**：本节条目自身是原创、可自由使用；但**本仓库整体**仍含 §一~§七 的第三方 CC BY-NC-SA 素材（`Assets/Resources/Hero/` 的四件衍生件即来自条目 1/6/8），所以项目整体口径不变——**在任何商业化前，仍须按 §六.4 与 §头部「2026-11-03 补充（商用口径）」换掉鲸鱼娘形象或取得书面授权**；页脚署名（`App.cs` 的 `CreditLines`）与「各 AI 形象均为同人虚构」免责声明继续保留。自绘形象与第三方形象同框时，页脚署名义务以第三方条目为准。
 
 ---
 
@@ -171,15 +171,16 @@
 2. **筛选口径**：只要真像素图（低色数、无抗锯齿、整数格绘制）；许可证只收 CC0 / OGA-BY / CC-BY（署名即可，含商用权）；BY-NC-SA 素材沿用 §头部商用红线；**禁止 AI 生成图与自绘**（玩家明令）。
 3. **登记**：下载原件先落 `ArtInbox/`（不入库），在本表登记来源页 URL、附件直链、作者、许可证、下载日期、是否修改、像素实测数据。
 4. **落盘**：处理脚本（本轮 `tools/gen_backdrop.py`）只做拷贝/裁切/缩放/量化，不重绘；写入 `Assets/Resources/` 后由 `ImportSettings.Apply()` 统一点采样、不压缩、无 mipmap。
-5. **署名**：需要署名的许可证（OGA-BY / CC-BY）在游戏内页脚 `App.cs BuildFooter()` 落一行；NC 素材同时受 §头部商用口径约束。
+5. **署名**：需要署名的许可证（OGA-BY / CC-BY）在游戏内署名块 `App.cs CreditLines` 落一行（主菜单落款取前两行，说明书「素材来源」页整份列出）；NC 素材同时受 §头部商用口径约束。
+     —— 本条登记时把落点写成了 App.cs 里一个叫 `BuildFooter()` 的函数，第十八轮收尾自查核对产物时发现那个函数不存在，实际落点是 `CreditLines`，按实现改正。
 
 ### 16. `oga_underwater-world-pixel-bg/1..5.png` ★在用（画布背景五层）
 - 来源页：https://opengameart.org/content/underwater-world-pixel-background （OGA 提交者 CraftPix.net，2026-11-04 curl 实测 HTTP 200）
 - 附件直链：https://opengameart.org/sites/default/files/underwater_world_pixel_background.zip
 - 许可：**OGA-BY 3.0**（署名 CraftPix.net，允许商用与再分发，https://opengameart.org/oga-by-30-faq）
-- 下载日期：2026-11-04；修改：**未修改**（`tools/gen_backdrop.py` 原字节拷成 `Assets/Resources/Backdrop/uw_{water,fish,rocks,sand,coral}.png`，md5 与源一致）
+- 下载日期：2026-11-04；修改：**未修改**（`tools/gen_backdrop.py` 原字节拷进 `Assets/Resources/Backdrop/`，五层名 `uw_water.png`、`uw_fish.png`、`uw_rocks.png`、`uw_sand.png`、`uw_coral.png`，md5 与源一致）
 - 实测：五张均 576×324 RGBA 真像素。1.png 全幅不透明水体渐变（4 色）；2.png 鱼群（alpha 包围盒 (51,126)-(517,235)，29 色）；3.png 礁石剪影（y130..324，5 色）；4.png 沙底（y243..324，5 色）；5.png 珊瑚前景（y169..324，14 色）。运行时按镜像瓦片平铺、五档横视差 .04/.08/.12/.20/.30、章节乘色，属显示变换，不改素材字节。
-- 署名落点：`App.cs BuildFooter()` 增「背景美术 CraftPix.net（OGA-BY 3.0）」一行。
+- 署名落点：`App.cs CreditLines` 第五行「画布背景为第三方像素素材：CraftPix.net《Underwater World》· OGA-BY 3.0 署名」（登记时把落点写成 App.cs 里的 `BuildFooter()`，那个函数不存在，按实现改正）。
 - 包内 `COUPON.pdf/png` 是 CraftPix 折扣券广告，**未拷入 Assets/**。
 
 ### 17. `oga_warped-ocean-view/`（备用，未入 Assets）
@@ -251,6 +252,37 @@
 - 未采用：`characters/deepseek/**`（与 §一条目 1/6/8 的鲸鱼娘同源，避免同一角色两套设计）、
   `characters/kimi|glm|mistral|llama|minimax|hunyuan/**`（出场名单里没有这几家）、
   `characters/doubao/official/doubao-avatar.png`（豆包官方头像，权利归字节跳动，非同人开放素材）。
+
+---
+
+## 十一、位图字体图集的字库：第三方 OFL 字体（2026-11-04 追加，第十八轮收尾自查补登记）
+
+> 背景：第十八轮核对 README「授权与署名」与 `docs/art-assets-manifest.md` 时发现一条**从头几轮就漏登记的第三方件**——
+> `Assets/Art/Font/fusion-pixel-12px.ttf` 是随初始提交 `b97aeda` 进公开仓库的第三方字体本体，
+> 而仓库里既没有它的许可证原文，本台账与 README 也都没有它。OFL 明确要求分发字体本体时随附许可证原文，
+> 所以这条属于**合规缺口**，不是单纯的文档不齐。本节即补记。
+
+### 20. `Assets/Art/Font/fusion-pixel-12px.ttf`（字体图集的字库）★在用（仅编辑器期）
+- 作者 / 上游：**TakWolf《Fusion Pixel Font》** — https://github.com/TakWolf/fusion-pixel-font （https://takwolf.com）
+- 字体本体自证（`fontTools` 读 name 表，本机实测，非抄页面）：
+  nameID 0 = `Fusion Pixel — SIL Open Font License 1.1 (TakWolf)`；nameID 1 = `Fusion Pixel`；
+  nameID 2 = `Proportional Zh-hans`；nameID 4 = `Fusion Pixel Proportional Zh-hans`；nameID 5 = `1.000`；
+  nameID 6 = `FusionPixel-ProportionalZh-hans`。文件大小 6,378,960 字节，`sha256` = `f2cbbbca12b1ba014a5816d850ddca4a3a930c6f891ee32c27b9b53b0b945371`。
+- 许可：**SIL Open Font License 1.1**。许可证原文（含 TakWolf 版权头）已从上游仓库 `LICENSE-OFL` 取回并入库为
+  `docs/licenses/fusion-pixel-12px-OFL.txt`（4,418 字节，sha256 `bc518cf64b8032c0…`，与 API 返回的 base64 解码逐字节一致）。
+  OFL 允许使用 / 研究 / 修改 / 再分发（含商用），条件是**再分发字体本体时必须带许可证原文**，且**保留字体名不得用于衍生件**（RESERVED FONT NAME）。
+  → 本项目只用它生成位图、不改字体本体、不在 UI 里宣称它是本项目的字体，合规。
+- 下载日期 / 具体 release 号：**未记**。文件 mtime 2026-10-29 09:36、随 `b97aeda` 入库，当时上游最新的 12px proportional ttf 包是 tag `2026.10.16`（GitHub API 实测），
+  但上游内部版本串固定 `1.000`、不随日期变，所以**不能只凭版本串钉死**。要钉死可比对 `fusion-pixel-font-12px-proportional-ttf-v2026.10.16.zip`
+  （实测 50,356,284 字节）内的 `fusion-pixel-12px-proportional-zh_hans.ttf` 哈希；该包 50MB，本轮未下载核对，此处如实记为「推断」。
+- 项目内怎么用：**只在编辑器 / 工具期用**。`tools/gen_art.py font` 用 Pillow `ImageFont.truetype(FONTDIR/'fusion-pixel-12px.ttf', 12)`
+  把当轮上屏字符栅格化成 `atlas.png` + `atlas.json`（当前 1,402 格）。运行时游戏加载的是这两份位图（`Assets/Resources/atlas.{png,json}`），
+  **字体本体不进玩家包**：实测 `Build/` 下 `*.ttf` 命中 0 个，所以 v0.1.0–v0.1.3 四个玩家包都不含该字体，也不触发 OFL 的随附义务。
+  位图字形属「使用字体渲染的结果」，按 OFL FAQ 不受字体许可证约束；本条仍登记是为了把「画面里每个汉字的字形来自第三方字库」这件事写清楚。
+- 补登记后的三处落点：`docs/licenses/fusion-pixel-12px-OFL.txt`（许可证原文）+ 本条 + README「授权与署名」与
+  `docs/art-assets-manifest.md` 的字体一节；字体文件同目录留一条 `Assets/Art/Font/` 指向许可证的说明由 README 承担，
+  避免把 `.txt` 塞进 `Assets/` 触发 Unity 重新导入、生成多余 `.meta`。
+
 
 
 
